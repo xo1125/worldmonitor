@@ -163,15 +163,27 @@ export async function fetchStockQuote(
   return results[0] || { symbol, name, display, price: null, change: null };
 }
 
+// Shared CoinGecko batch response (crypto + watchlist in one call)
+let _batchCache: { data: CoinGeckoExtendedResponse | null; timestamp: number } = { data: null, timestamp: 0 };
+const BATCH_TTL = 90_000; // 90s
+
+async function fetchCryptoBatch(): Promise<CoinGeckoExtendedResponse> {
+  if (_batchCache.data && Date.now() - _batchCache.timestamp < BATCH_TTL) {
+    return _batchCache.data;
+  }
+  // Merge crypto + watchlist IDs into a single CoinGecko call
+  const allIds = [...new Set([...CRYPTO_IDS, ...WATCHLIST_IDS])].join(',');
+  const url = `/api/coingecko?ids=${allIds}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`;
+  const response = await fetchWithProxy(url);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const data: CoinGeckoExtendedResponse = await response.json();
+  _batchCache = { data, timestamp: Date.now() };
+  return data;
+}
+
 export async function fetchCrypto(): Promise<CryptoData[]> {
   try {
-    // Build URL dynamically from CRYPTO_IDS (variant-aware)
-    const ids = CRYPTO_IDS.join(',');
-    const url = `/api/coingecko?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
-    const response = await fetchWithProxy(url);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data: CoinGeckoResponse = await response.json();
-
+    const data = await fetchCryptoBatch();
     return Object.entries(CRYPTO_MAP).map(([id, info]) => {
       const coinData = data[id];
       return {
@@ -274,15 +286,10 @@ export async function fetchMacroSignals(): Promise<MacroSignalResult | null> {
   }
 }
 
-// Watchlist token prices
+// Watchlist token prices (shares batch with fetchCrypto to avoid rate limits)
 export async function fetchWatchlist(): Promise<WatchlistData[]> {
   try {
-    const ids = WATCHLIST_IDS.join(',');
-    const url = `/api/coingecko?ids=${ids}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`;
-    const response = await fetchWithProxy(url);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data: CoinGeckoExtendedResponse = await response.json();
-
+    const data = await fetchCryptoBatch();
     return Object.entries(WATCHLIST_MAP).map(([id, info]) => {
       const coinData = data[id];
       return {
@@ -300,20 +307,20 @@ export async function fetchWatchlist(): Promise<WatchlistData[]> {
   }
 }
 
-// TAO Subnet data
+// TAO Subnet data (TAO price from shared batch to avoid extra CoinGecko call)
 export async function fetchTaoSubnets(): Promise<TaoSubnet[]> {
   try {
-    const [subnetResponse, priceResponse] = await Promise.all([
+    // Fetch subnets from API; TAO price comes from shared batch
+    const [subnetResponse, batchData] = await Promise.all([
       fetchWithProxy('/api/tao-subnets'),
-      fetchWithProxy('/api/coingecko?ids=bittensor&vs_currencies=usd&include_24hr_change=true'),
+      fetchCryptoBatch().catch(() => null),
     ]);
 
     let taoPrice: number | undefined;
     let taoChange: number | undefined;
-    if (priceResponse.ok) {
-      const priceData: CoinGeckoResponse = await priceResponse.json();
-      taoPrice = priceData.bittensor?.usd;
-      taoChange = priceData.bittensor?.usd_24h_change;
+    if (batchData?.bittensor) {
+      taoPrice = batchData.bittensor.usd;
+      taoChange = batchData.bittensor.usd_24h_change;
     }
 
     if (!subnetResponse.ok) throw new Error(`HTTP ${subnetResponse.status}`);

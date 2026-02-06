@@ -163,6 +163,10 @@ const ALLOWED_DOMAINS = [
   'cryptoslate.com',
   'thedefiant.io',
   'nftevening.com',
+  'blockworks.co',
+  'www.dlnews.com',
+  'unchainedcrypto.com',
+  'wublock.substack.com',
 ];
 
 // CORS helper - allow worldmonitor.app and Vercel preview domains

@@ -146,10 +146,34 @@ export default async function handler(request) {
 
     // Current date context for LLM (models may have outdated knowledge)
     const isTechVariant = variant === 'tech';
-    const dateContext = `Current date: ${new Date().toISOString().split('T')[0]}.${isTechVariant ? '' : ' Donald Trump is the current US President (second term, inaugurated Jan 2025).'}`;
+    const isCryptoVariant = variant === 'crypto';
+    const dateContext = `Current date: ${new Date().toISOString().split('T')[0]}.${(isTechVariant || isCryptoVariant) ? '' : ' Donald Trump is the current US President (second term, inaugurated Jan 2025).'}`;
+
+    // Crypto variant system prompt: cryptocurrency market intelligence brief
+    const CRYPTO_SYSTEM_PROMPT = `${dateContext}
+
+You are a cryptocurrency market intelligence analyst. Produce a concise brief covering the crypto ecosystem.
+
+Structure your response with clear sections:
+**Market Overview** - Overall market conditions, BTC/ETH momentum, total market cap direction, and dominant sentiment (fear/greed).
+**Key Moves** - Notable token price action, catalysts (ETF flows, whale movements, token unlocks, listings/delistings), and volume anomalies.
+**Regulatory** - Developments from SEC, CFTC, DOJ, MiCA, or other global regulators affecting crypto markets.
+**DeFi Updates** - Protocol launches, TVL shifts, governance proposals, yield changes, and ecosystem developments.
+**Risk Alerts** - Exploits, rug pulls, exchange solvency concerns, bridge hacks, smart contract vulnerabilities, or stablecoin depegs.
+
+Rules:
+- Focus ONLY on cryptocurrency, blockchain, DeFi, NFTs, and Web3 topics
+- IGNORE military operations, geopolitical theater postures, geographic convergence zones, and non-crypto macro unless directly impacting crypto prices
+- Lead each section with the most significant item
+- Be specific: name tokens, protocols, exchanges, and dollar amounts
+- Keep each section to 1-2 sentences
+- If a section has no news, omit it entirely
+- No meta-commentary, no TV-style openings`;
 
     if (mode === 'brief') {
-      if (isTechVariant) {
+      if (isCryptoVariant) {
+        systemPrompt = CRYPTO_SYSTEM_PROMPT;
+      } else if (isTechVariant) {
         // Tech variant: focus on startups, AI, funding, product launches
         systemPrompt = `${dateContext}
 
@@ -173,9 +197,13 @@ Rules:
 - If focal points show news + signals convergence, that's the lead
 - No bullet points, no meta-commentary`;
       }
-      userPrompt = `Summarize the top story:\n${headlineText}${intelSection}`;
+      userPrompt = isCryptoVariant
+        ? `Produce a crypto market brief from these headlines:\n${headlineText}${intelSection}`
+        : `Summarize the top story:\n${headlineText}${intelSection}`;
     } else if (mode === 'analysis') {
-      if (isTechVariant) {
+      if (isCryptoVariant) {
+        systemPrompt = CRYPTO_SYSTEM_PROMPT;
+      } else if (isTechVariant) {
         systemPrompt = `${dateContext}
 
 Analyze the tech/startup trend in 2-3 sentences.
@@ -196,14 +224,20 @@ Rules:
 - If focal points show news-signal correlation, flag as escalation
 - Connect dots, be specific about implications`;
       }
-      userPrompt = isTechVariant
+      userPrompt = isCryptoVariant
+        ? `Analyze the key crypto market dynamics and risks:\n${headlineText}${intelSection}`
+        : isTechVariant
         ? `What's the key tech trend or development?\n${headlineText}${intelSection}`
         : `What's the key pattern or risk?\n${headlineText}${intelSection}`;
     } else {
-      systemPrompt = isTechVariant
+      systemPrompt = isCryptoVariant
+        ? CRYPTO_SYSTEM_PROMPT
+        : isTechVariant
         ? `${dateContext}\n\nSynthesize tech news in 2 sentences. Focus on startups, AI, funding, products. Ignore politics unless directly about tech regulation.`
         : `${dateContext}\n\nSynthesize in 2 sentences max. Lead with substance. NEVER start with "Breaking news" or "Tonight" - just state the insight directly. CRITICAL focal points with news-signal convergence are significant.`;
-      userPrompt = `Key takeaway:\n${headlineText}${intelSection}`;
+      userPrompt = isCryptoVariant
+        ? `Key crypto market takeaway:\n${headlineText}${intelSection}`
+        : `Key takeaway:\n${headlineText}${intelSection}`;
     }
 
     const response = await fetch(OPENROUTER_API_URL, {
@@ -221,7 +255,7 @@ Rules:
           { role: 'user', content: userPrompt },
         ],
         temperature: 0.3,
-        max_tokens: 150,
+        max_tokens: isCryptoVariant ? 400 : 150,
         top_p: 0.9,
       }),
     });

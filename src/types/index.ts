@@ -125,12 +125,32 @@ export interface MacroSignal {
   status: MacroSignalStatus;
   value: string;
   detail: string;
+  sparkline?: number[];
+  supportingData?: Record<string, string>;
 }
 
 export interface MacroSignalResult {
   verdict: 'BUY' | 'CASH';
   signals: MacroSignal[];
   lastUpdated: Date;
+}
+
+// Watchlist token data
+export interface WatchlistData {
+  name: string;
+  symbol: string;
+  price: number;
+  change: number;
+}
+
+// TAO Subnet data
+export interface TaoSubnet {
+  name: string;
+  netuid: number | string; // SN number or 'INSP' etc.
+  emissions?: number;
+  validators?: number;
+  registrations?: number;
+  status: 'active' | 'inactive' | 'unknown';
 }
 
 export type EscalationTrend = 'escalating' | 'stable' | 'de-escalating';

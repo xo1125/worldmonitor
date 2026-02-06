@@ -82,6 +82,12 @@ function computeSignals(quotes) {
       status: isSqueezing ? 'bearish' : 'bullish',
       value: `JPY 30d ROC: ${jpyROC.toFixed(2)}%`,
       detail: isSqueezing ? 'Yen strengthening → carry trade unwind risk' : 'Yen stable → no liquidity headwind',
+      sparkline: jpy.closes.slice(-14),
+      supportingData: {
+        'JPY/USD': `${jpy.price?.toFixed(2)}`,
+        '30d ROC': `${jpyROC.toFixed(2)}%`,
+        '7d ROC': `${calcROC(jpy.closes, 7).toFixed(2)}%`,
+      },
     });
   }
 
@@ -96,6 +102,12 @@ function computeSignals(quotes) {
       status: isGap ? 'bearish' : 'bullish',
       value: `BTC 1w: ${btcReturn.toFixed(1)}% | QQQ 1w: ${qqqReturn.toFixed(1)}%`,
       detail: isGap ? 'Stocks holding, BTC flushing → risk of further downside' : 'BTC & stocks moving together',
+      sparkline: btc.closes.slice(-14),
+      supportingData: {
+        'BTC 1w': `${btcReturn.toFixed(1)}%`,
+        'QQQ 1w': `${qqqReturn.toFixed(1)}%`,
+        'Spread': `${(btcReturn - qqqReturn).toFixed(1)}%`,
+      },
     });
   }
 
@@ -118,6 +130,13 @@ function computeSignals(quotes) {
       status: isRiskOn ? 'bullish' : 'bearish',
       value: `QQQ/XLP 20d ROC: ${ratioROC.toFixed(2)}%`,
       detail: isRiskOn ? 'Growth outperforming defensives' : 'Defensives outperforming growth',
+      sparkline: ratios.slice(-14),
+      supportingData: {
+        'QQQ': `$${qqq.price?.toFixed(2)}`,
+        'XLP': `$${xlp.price?.toFixed(2)}`,
+        'Ratio': `${(ratios[ratios.length - 1] || 0).toFixed(2)}`,
+        '20d ROC': `${ratioROC.toFixed(2)}%`,
+      },
     });
   }
 
@@ -134,6 +153,12 @@ function computeSignals(quotes) {
       status: isBullish ? 'bullish' : isBearish ? 'bearish' : 'neutral',
       value: `BTC: $${price?.toLocaleString()} | SMA50: $${Math.round(sma50).toLocaleString()}`,
       detail: isBullish ? 'Price above 50 SMA & VWAP' : isBearish ? 'Price below 50 SMA' : 'Mixed signals',
+      sparkline: btc.closes.slice(-14),
+      supportingData: {
+        'BTC': `$${price?.toLocaleString()}`,
+        'SMA50': `$${Math.round(sma50).toLocaleString()}`,
+        'VWAP': `$${Math.round(vwap).toLocaleString()}`,
+      },
     });
   }
 

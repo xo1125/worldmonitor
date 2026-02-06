@@ -1,5 +1,5 @@
-import type { MarketData, CryptoData, StablecoinData, CryptoSectorData, MacroSignalResult } from '@/types';
-import { API_URLS, CRYPTO_MAP, CRYPTO_IDS, STABLECOIN_MAP, CRYPTO_SECTORS } from '@/config';
+import type { MarketData, CryptoData, StablecoinData, CryptoSectorData, MacroSignalResult, WatchlistData, TaoSubnet } from '@/types';
+import { API_URLS, CRYPTO_MAP, CRYPTO_IDS, STABLECOIN_MAP, CRYPTO_SECTORS, WATCHLIST_MAP, WATCHLIST_IDS, TAO_SUBNETS } from '@/config';
 import { fetchWithProxy } from '@/utils';
 
 interface FinnhubQuote {
@@ -271,5 +271,51 @@ export async function fetchMacroSignals(): Promise<MacroSignalResult | null> {
   } catch (e) {
     console.error('Failed to fetch macro signals:', e);
     return null;
+  }
+}
+
+// Watchlist token prices
+export async function fetchWatchlist(): Promise<WatchlistData[]> {
+  try {
+    const ids = WATCHLIST_IDS.join(',');
+    const url = `/api/coingecko?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
+    const response = await fetchWithProxy(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data: CoinGeckoResponse = await response.json();
+
+    return Object.entries(WATCHLIST_MAP).map(([id, info]) => {
+      const coinData = data[id];
+      return {
+        name: info.name,
+        symbol: info.symbol,
+        price: coinData?.usd ?? 0,
+        change: coinData?.usd_24h_change ?? 0,
+      };
+    });
+  } catch (e) {
+    console.error('Failed to fetch watchlist:', e);
+    return [];
+  }
+}
+
+// TAO Subnet data
+export async function fetchTaoSubnets(): Promise<TaoSubnet[]> {
+  try {
+    const response = await fetchWithProxy('/api/tao-subnets');
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    return data.subnets || TAO_SUBNETS.map(s => ({
+      name: s.name,
+      netuid: s.netuid,
+      status: 'unknown' as const,
+    }));
+  } catch (e) {
+    console.error('Failed to fetch TAO subnets:', e);
+    // Return static fallback
+    return TAO_SUBNETS.map(s => ({
+      name: s.name,
+      netuid: s.netuid,
+      status: 'unknown' as const,
+    }));
   }
 }

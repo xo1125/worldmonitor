@@ -97,3 +97,37 @@ export const CRYPTO_SECTORS: CryptoSector[] = [
   { name: 'Privacy', coins: ['monero', 'zcash'] },
   { name: 'Infrastructure', coins: ['chainlink', 'the-graph', 'filecoin', 'helium'] },
 ];
+
+// Watchlist tokens (fund-specific, used by crypto variant)
+export const WATCHLIST_MAP: Record<string, { name: string; symbol: string }> = {
+  hyperliquid: { name: 'Hyperliquid', symbol: 'HYPE' },
+  litentry: { name: 'Litentry', symbol: 'LIT' },
+  sky: { name: 'Sky', symbol: 'SKY' },
+  'meta-2-2': { name: 'Meta', symbol: 'META' },
+  fogo: { name: 'Fogo', symbol: 'FOGO' },
+  canton: { name: 'Canton', symbol: 'CANTON' },
+  'jupiter-exchange-solana': { name: 'Jupiter', symbol: 'JUP' },
+};
+export const WATCHLIST_IDS = Object.keys(WATCHLIST_MAP);
+
+// TAO Subnet definitions (static config, live data from API)
+export interface TaoSubnetConfig {
+  name: string;
+  netuid: number | string;
+}
+
+export const TAO_SUBNETS: TaoSubnetConfig[] = [
+  { name: 'Chutes', netuid: 64 },
+  { name: 'Targon', netuid: 4 },
+  { name: 'affine', netuid: 120 },
+  { name: 'lium', netuid: 51 },
+  { name: 'templar', netuid: 3 },
+  { name: 'Ridges AI', netuid: 62 },
+  { name: 'Score', netuid: 44 },
+  { name: 'iota', netuid: 9 },
+  { name: '404-GEN', netuid: 17 },
+  { name: 'Synth', netuid: 50 },
+  { name: 'Sportstensor', netuid: 41 },
+  { name: 'Bitsec.ai', netuid: 60 },
+  { name: 'Inspect', netuid: 'INSP' },
+];

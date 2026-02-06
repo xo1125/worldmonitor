@@ -68,6 +68,9 @@ export const FEEDS: Record<string, Feed[]> = {
     { name: 'CoinTelegraph', url: rss('https://cointelegraph.com/rss') },
     { name: 'The Block', url: rss('https://www.theblock.co/rss.xml') },
     { name: 'Decrypt', url: rss('https://decrypt.co/feed') },
+    { name: 'Blockworks', url: rss('https://blockworks.co/feed') },
+    { name: 'DL News', url: rss('https://www.dlnews.com/feed/') },
+    { name: 'Wu Blockchain', url: rss('https://news.google.com/rss/search?q="Wu+Blockchain"+OR+site:wublock.substack.com+when:3d&hl=en-US&gl=US&ceid=US:en') },
   ],
 
   // Crypto Finance (institutional, macro)
@@ -76,26 +79,29 @@ export const FEEDS: Record<string, Feed[]> = {
     { name: 'Bloomberg Crypto', url: rss('https://news.google.com/rss/search?q=site:bloomberg.com+crypto+OR+bitcoin+when:2d&hl=en-US&gl=US&ceid=US:en') },
     { name: 'Reuters Crypto', url: rss('https://news.google.com/rss/search?q=site:reuters.com+cryptocurrency+OR+bitcoin+OR+stablecoin+when:3d&hl=en-US&gl=US&ceid=US:en') },
     { name: 'Yahoo Finance Crypto', url: rss('https://finance.yahoo.com/rss/topstories') },
+    { name: 'Unchained', url: rss('https://unchainedcrypto.com/feed/') },
+    { name: 'Messari', url: rss('https://news.google.com/rss/search?q=site:messari.io+OR+"Messari"+crypto+research+when:3d&hl=en-US&gl=US&ceid=US:en') },
   ],
 };
 
-// Panel configuration for crypto variant
+// Panel configuration for crypto variant — command center layout order
 export const DEFAULT_PANELS: Record<string, PanelConfig> = {
-  'live-news': { name: 'Crypto Headlines', enabled: true, priority: 1 },
-  insights: { name: 'AI Crypto Insights', enabled: true, priority: 1 },
+  'macro-signals': { name: 'Market Radar', enabled: true, priority: 1 },
+  watchlist: { name: 'Watchlist', enabled: true, priority: 1 },
   crypto: { name: 'Crypto Prices', enabled: true, priority: 1 },
+  'tao-subnets': { name: 'TAO Subnets', enabled: true, priority: 1 },
   stablecoins: { name: 'Stablecoins', enabled: true, priority: 1 },
   'crypto-heatmap': { name: 'Crypto Sectors', enabled: true, priority: 1 },
-  'macro-signals': { name: 'Market Radar', enabled: true, priority: 1 },
+  insights: { name: 'AI Crypto Insights', enabled: true, priority: 1 },
+  'live-news': { name: 'Crypto Headlines', enabled: true, priority: 1 },
   markets: { name: 'Crypto Markets', enabled: true, priority: 1 },
-  heatmap: { name: 'Sector Heatmap', enabled: true, priority: 2 },
   trading: { name: 'Trading & Analysis', enabled: true, priority: 1 },
   bitcoin: { name: 'Bitcoin', enabled: true, priority: 1 },
   ethereum: { name: 'Ethereum', enabled: true, priority: 1 },
   altcoins: { name: 'Altcoins', enabled: true, priority: 1 },
   defi: { name: 'DeFi', enabled: true, priority: 1 },
-  nft: { name: 'NFT & Digital Assets', enabled: true, priority: 1 },
   regulation: { name: 'Crypto Regulation', enabled: true, priority: 1 },
+  nft: { name: 'NFT & Digital Assets', enabled: true, priority: 2 },
   finance: { name: 'Crypto Finance', enabled: true, priority: 2 },
   polymarket: { name: 'Crypto Predictions', enabled: true, priority: 2 },
   monitors: { name: 'My Monitors', enabled: true, priority: 2 },

@@ -11329,18 +11329,33 @@ body.has-critical-banner .panels-grid {
 /* ============================================
    CRYPTO VARIANT - Macro Signals Panel
    ============================================ */
+/* ============================================
+   MACRO SIGNALS — Enhanced Command Center
+   ============================================ */
 .macro-signals-container {
   padding: 8px;
 }
 
 .macro-verdict {
-  text-align: center;
-  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
   margin-bottom: 12px;
   border-radius: 6px;
-  font-size: 18px;
   font-weight: 800;
   letter-spacing: 2px;
+}
+
+.macro-verdict-label {
+  font-size: 10px;
+  opacity: 0.7;
+  letter-spacing: 1px;
+}
+
+.macro-verdict-value {
+  font-size: 20px;
 }
 
 .macro-verdict.verdict-buy {
@@ -11366,6 +11381,30 @@ body.has-critical-banner .panels-grid {
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 12px;
+  transition: border-color 0.2s;
+}
+
+.macro-signal-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.macro-signal-card.signal-bullish {
+  border-left: 3px solid rgba(68, 255, 136, 0.5);
+}
+
+.macro-signal-card.signal-bearish {
+  border-left: 3px solid rgba(255, 68, 68, 0.5);
+}
+
+.macro-signal-card.signal-neutral {
+  border-left: 3px solid rgba(255, 200, 50, 0.5);
+}
+
+.macro-signal-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
 }
 
 .macro-signal-name {
@@ -11374,20 +11413,232 @@ body.has-critical-banner .panels-grid {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--text-dim);
-  margin-bottom: 4px;
 }
 
-.macro-signal-status {
-  font-size: 13px;
+.macro-signal-badge {
+  font-size: 9px;
   font-weight: 700;
-  margin-bottom: 2px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+}
+
+.macro-signal-badge.signal-bullish {
+  background: rgba(68, 255, 136, 0.15);
+  color: #44ff88;
+}
+
+.macro-signal-badge.signal-bearish {
+  background: rgba(255, 68, 68, 0.15);
+  color: #ff4444;
+}
+
+.macro-signal-badge.signal-neutral {
+  background: rgba(255, 200, 50, 0.15);
+  color: #ffc832;
 }
 
 .macro-signal-value {
   font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.macro-sparkline {
+  width: 100%;
+  height: 24px;
+  margin: 4px 0;
+}
+
+.macro-supporting {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0;
+}
+
+.macro-kv {
+  font-size: 9px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.macro-key {
   color: var(--text-dim);
+}
+
+.macro-val {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.macro-signal-detail {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 4px;
+  line-height: 1.3;
 }
 
 .signal-bullish { color: #44ff88; }
 .signal-bearish { color: #ff4444; }
 .signal-neutral { color: #ffc832; }
+
+/* ============================================
+   WATCHLIST PANEL — Compact Token Table
+   ============================================ */
+.watchlist-container {
+  padding: 4px 8px;
+}
+
+.watchlist-header-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 90px 70px;
+  gap: 4px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+}
+
+.watchlist-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 90px 70px;
+  gap: 4px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  align-items: center;
+  transition: background 0.15s;
+}
+
+.watchlist-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.watchlist-row:last-child {
+  border-bottom: none;
+}
+
+.watchlist-symbol {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.watchlist-name {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.watchlist-price {
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+  text-align: right;
+}
+
+.watchlist-change {
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  text-align: right;
+}
+
+.watchlist-change.change-up { color: #44ff88; }
+.watchlist-change.change-down { color: #ff4444; }
+.watchlist-change.change-flat { color: var(--text-dim); }
+
+/* ============================================
+   TAO SUBNETS PANEL — Compact Card Grid
+   ============================================ */
+.tao-subnets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 6px;
+  padding: 8px;
+}
+
+.tao-subnet-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s, background 0.2s;
+  display: block;
+}
+
+.tao-subnet-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tao-subnet-card.subnet-active {
+  border-left: 3px solid rgba(68, 255, 136, 0.5);
+}
+
+.tao-subnet-card.subnet-inactive {
+  border-left: 3px solid rgba(255, 68, 68, 0.3);
+  opacity: 0.6;
+}
+
+.tao-subnet-card.subnet-unknown {
+  border-left: 3px solid rgba(255, 255, 255, 0.15);
+}
+
+.subnet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.subnet-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.subnet-netuid {
+  font-size: 9px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.subnet-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.subnet-dot {
+  font-size: 8px;
+}
+
+.subnet-active .subnet-dot { color: #44ff88; }
+.subnet-inactive .subnet-dot { color: #ff4444; }
+.subnet-unknown .subnet-dot { color: var(--text-dim); }
+
+.subnet-metrics {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.subnet-metric {
+  font-size: 9px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-dim);
+}

@@ -31,3 +31,5 @@ export * from './SatelliteFiresPanel';
 export * from './StablecoinPanel';
 export * from './CryptoHeatmapPanel';
 export * from './MacroSignalsPanel';
+export * from './WatchlistPanel';
+export * from './TaoSubnetPanel';

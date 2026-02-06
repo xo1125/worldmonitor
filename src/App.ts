@@ -12,7 +12,7 @@ import {
   STORAGE_KEYS,
   SITE_VARIANT,
 } from '@/config';
-import { fetchCategoryFeeds, fetchMultipleStocks, fetchCrypto, fetchStablecoins, fetchCryptoSectors, fetchMacroSignals, fetchPredictions, fetchEarthquakes, fetchWeatherAlerts, fetchFredData, fetchInternetOutages, isOutagesConfigured, fetchAisSignals, initAisStream, getAisStatus, disconnectAisStream, isAisConfigured, fetchCableActivity, fetchProtestEvents, getProtestStatus, fetchFlightDelays, fetchMilitaryFlights, fetchMilitaryVessels, initMilitaryVesselStream, isMilitaryVesselTrackingConfigured, initDB, updateBaseline, calculateDeviation, addToSignalHistory, saveSnapshot, cleanOldSnapshots, analysisWorker, fetchPizzIntStatus, fetchGdeltTensions, fetchNaturalEvents, fetchRecentAwards, fetchOilAnalytics } from '@/services';
+import { fetchCategoryFeeds, fetchMultipleStocks, fetchCrypto, fetchStablecoins, fetchCryptoSectors, fetchMacroSignals, fetchWatchlist, fetchTaoSubnets, fetchPredictions, fetchEarthquakes, fetchWeatherAlerts, fetchFredData, fetchInternetOutages, isOutagesConfigured, fetchAisSignals, initAisStream, getAisStatus, disconnectAisStream, isAisConfigured, fetchCableActivity, fetchProtestEvents, getProtestStatus, fetchFlightDelays, fetchMilitaryFlights, fetchMilitaryVessels, initMilitaryVesselStream, isMilitaryVesselTrackingConfigured, initDB, updateBaseline, calculateDeviation, addToSignalHistory, saveSnapshot, cleanOldSnapshots, analysisWorker, fetchPizzIntStatus, fetchGdeltTensions, fetchNaturalEvents, fetchRecentAwards, fetchOilAnalytics } from '@/services';
 import { fetchCountryMarkets } from '@/services/polymarket';
 import { mlWorker } from '@/services/ml-worker';
 import { clusterNewsHybrid } from '@/services/clustering';
@@ -65,6 +65,8 @@ import {
   StablecoinPanel,
   CryptoHeatmapPanel,
   MacroSignalsPanel,
+  WatchlistPanel,
+  TaoSubnetPanel,
 } from '@/components';
 import type { SearchResult } from '@/components/SearchModal';
 import { collectStoryData } from '@/services/story-data';
@@ -1095,7 +1097,7 @@ export class App {
             <span class="status-dot"></span>
             <span>LIVE</span>
           </div>
-          <div class="region-selector">
+          ${SITE_VARIANT !== 'crypto' ? `<div class="region-selector">
             <select id="regionSelect" class="region-select">
               <option value="global">Global</option>
               <option value="america">Americas</option>
@@ -1106,7 +1108,7 @@ export class App {
               <option value="africa">Africa</option>
               <option value="oceania">Oceania</option>
             </select>
-          </div>
+          </div>` : ''}
         </div>
         <div class="header-right">
           <button class="search-btn" id="searchBtn"><kbd>⌘K</kbd> Search</button>
@@ -1375,6 +1377,12 @@ export class App {
 
       const macroSignalsPanel = new MacroSignalsPanel();
       this.panels['macro-signals'] = macroSignalsPanel;
+
+      const watchlistPanel = new WatchlistPanel();
+      this.panels['watchlist'] = watchlistPanel;
+
+      const taoSubnetPanel = new TaoSubnetPanel();
+      this.panels['tao-subnets'] = taoSubnetPanel;
 
       // Crypto-specific news panels
       const bitcoinPanel = new NewsPanel('bitcoin', 'Bitcoin');
@@ -2619,6 +2627,22 @@ export class App {
       } catch (e) {
         console.error('[App] Macro signals load failed:', e);
       }
+
+      // Watchlist
+      try {
+        const watchlistData = await fetchWatchlist();
+        (this.panels['watchlist'] as WatchlistPanel)?.renderWatchlist(watchlistData);
+      } catch (e) {
+        console.error('[App] Watchlist load failed:', e);
+      }
+
+      // TAO Subnets
+      try {
+        const taoData = await fetchTaoSubnets();
+        (this.panels['tao-subnets'] as TaoSubnetPanel)?.renderSubnets(taoData);
+      } catch (e) {
+        console.error('[App] TAO subnets load failed:', e);
+      }
     }
   }
 
@@ -3418,6 +3442,27 @@ export class App {
       this.scheduleRefresh('ais', () => this.loadAisSignals(), REFRESH_INTERVALS.ais, () => this.mapLayers.ais);
       this.scheduleRefresh('cables', () => this.loadCableActivity(), 30 * 60 * 1000, () => this.mapLayers.cables);
       this.scheduleRefresh('flights', () => this.loadFlightDelays(), 10 * 60 * 1000, () => this.mapLayers.flights);
+    }
+
+    // Crypto variant: refresh watchlist and TAO subnets
+    if (SITE_VARIANT === 'crypto') {
+      this.scheduleRefresh('watchlist', async () => {
+        try {
+          const data = await fetchWatchlist();
+          (this.panels['watchlist'] as WatchlistPanel)?.renderWatchlist(data);
+        } catch (e) {
+          console.error('[App] Watchlist refresh failed:', e);
+        }
+      }, 60000); // 60s
+
+      this.scheduleRefresh('tao-subnets', async () => {
+        try {
+          const data = await fetchTaoSubnets();
+          (this.panels['tao-subnets'] as TaoSubnetPanel)?.renderSubnets(data);
+        } catch (e) {
+          console.error('[App] TAO subnets refresh failed:', e);
+        }
+      }, 300000); // 5 min
     }
 
     // Refresh intelligence signals for CII (geopolitical variant only)

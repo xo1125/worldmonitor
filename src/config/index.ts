@@ -14,8 +14,8 @@ export {
 } from './variants/base';
 
 // Market data (shared)
-export { SECTORS, COMMODITIES, MARKET_SYMBOLS, CRYPTO_MAP, CRYPTO_IDS, STABLECOIN_IDS, STABLECOIN_MAP, CRYPTO_SECTORS } from './markets';
-export type { CryptoSector } from './markets';
+export { SECTORS, COMMODITIES, MARKET_SYMBOLS, CRYPTO_MAP, CRYPTO_IDS, STABLECOIN_IDS, STABLECOIN_MAP, CRYPTO_SECTORS, WATCHLIST_MAP, WATCHLIST_IDS, TAO_SUBNETS } from './markets';
+export type { CryptoSector, TaoSubnetConfig } from './markets';
 
 // Geo data (shared base)
 export { UNDERSEA_CABLES, MAP_URLS } from './geo';

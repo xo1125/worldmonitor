@@ -114,6 +114,14 @@ export class InsightsPanel extends Panel {
     'quarterly', 'profit', 'investor', 'ipo', 'funding', 'valuation',
   ];
 
+  // Crypto-specific keywords (high boost for crypto variant)
+  private static readonly CRYPTO_KEYWORDS = [
+    'exchange', 'protocol', 'token', 'liquidity', 'yield', 'hack', 'exploit',
+    'airdrop', 'staking', 'defi', 'nft', 'mining', 'halving', 'etf',
+    'sec', 'regulation', 'whale', 'flash crash', 'rug pull', 'bridge',
+    'layer 2', 'rollup', 'memecoin', 'bitcoin', 'ethereum', 'solana',
+  ];
+
   private getImportanceScore(cluster: ClusteredEvent): number {
     let score = 0;
     const titleLower = cluster.primaryTitle.toLowerCase();
@@ -129,9 +137,17 @@ export class InsightsPanel extends Panel {
     }
 
     // Military keywords: highest priority (+80 base, +20 per match)
-    const militaryMatches = InsightsPanel.MILITARY_KEYWORDS.filter(kw => titleLower.includes(kw));
-    if (militaryMatches.length > 0) {
-      score += 80 + (militaryMatches.length * 20);
+    // Crypto variant: use CRYPTO_KEYWORDS instead of MILITARY_KEYWORDS
+    if (SITE_VARIANT === 'crypto') {
+      const cryptoMatches = InsightsPanel.CRYPTO_KEYWORDS.filter(kw => titleLower.includes(kw));
+      if (cryptoMatches.length > 0) {
+        score += 80 + (cryptoMatches.length * 20);
+      }
+    } else {
+      const militaryMatches = InsightsPanel.MILITARY_KEYWORDS.filter(kw => titleLower.includes(kw));
+      if (militaryMatches.length > 0) {
+        score += 80 + (militaryMatches.length * 20);
+      }
     }
 
     // Civil unrest: high priority (+70 base, +18 per match)
@@ -289,7 +305,7 @@ export class InsightsPanel extends Panel {
           window.dispatchEvent(new CustomEvent('focal-points-ready'));
         }
       } else {
-        // Tech variant: no geopolitical signals, just summarize tech news
+        // Tech/crypto variant: no geopolitical signals
         signalSummary = {
           timestamp: new Date(),
           totalSignals: 0,
@@ -332,7 +348,7 @@ export class InsightsPanel extends Panel {
         this.setProgress(3, totalSteps, 'Generating world brief...');
 
         // Pass focal point context + theater posture to AI for correlation-aware summarization
-        // Tech variant: no geopolitical context, just tech news summarization
+        // Tech/crypto variant: no geopolitical context, just news summarization
         const theaterContext = SITE_VARIANT === 'full' ? this.getTheaterPostureContext() : '';
         const geoContext = SITE_VARIANT === 'full'
           ? (focalSummary.aiContext || signalSummary.aiContext) + theaterContext

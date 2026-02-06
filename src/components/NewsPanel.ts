@@ -110,9 +110,6 @@ export class NewsPanel extends Panel {
   }
 
   private createSummarizeButton(): void {
-    // Skip AI summarize for crypto variant
-    if (SITE_VARIANT === 'crypto') return;
-
     // Create summary container (inserted between header and content)
     this.summaryContainer = document.createElement('div');
     this.summaryContainer.className = 'panel-summary';

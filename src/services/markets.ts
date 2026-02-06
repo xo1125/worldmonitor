@@ -319,3 +319,33 @@ export async function fetchTaoSubnets(): Promise<TaoSubnet[]> {
     }));
   }
 }
+
+// ETF Flows data
+export interface ETFFlowsResult {
+  etfs: Array<{
+    ticker: string;
+    name: string;
+    issuer: string;
+    price: number | null;
+    change: number | null;
+    volume: number | null;
+  }>;
+  aggregate: {
+    totalVolume: number;
+    avgChange: number;
+    estimatedNetFlow: number;
+    etfCount: number;
+  };
+  lastUpdated: string;
+}
+
+export async function fetchETFFlows(): Promise<ETFFlowsResult | null> {
+  try {
+    const response = await fetchWithProxy('/api/etf-flows');
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  } catch (e) {
+    console.error('Failed to fetch ETF flows:', e);
+    return null;
+  }
+}

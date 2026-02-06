@@ -12,7 +12,7 @@ import {
   STORAGE_KEYS,
   SITE_VARIANT,
 } from '@/config';
-import { fetchCategoryFeeds, fetchMultipleStocks, fetchCrypto, fetchStablecoins, fetchCryptoSectors, fetchMacroSignals, fetchWatchlist, fetchTaoSubnets, fetchPredictions, fetchEarthquakes, fetchWeatherAlerts, fetchFredData, fetchInternetOutages, isOutagesConfigured, fetchAisSignals, initAisStream, getAisStatus, disconnectAisStream, isAisConfigured, fetchCableActivity, fetchProtestEvents, getProtestStatus, fetchFlightDelays, fetchMilitaryFlights, fetchMilitaryVessels, initMilitaryVesselStream, isMilitaryVesselTrackingConfigured, initDB, updateBaseline, calculateDeviation, addToSignalHistory, saveSnapshot, cleanOldSnapshots, analysisWorker, fetchPizzIntStatus, fetchGdeltTensions, fetchNaturalEvents, fetchRecentAwards, fetchOilAnalytics } from '@/services';
+import { fetchCategoryFeeds, fetchMultipleStocks, fetchCrypto, fetchStablecoins, fetchCryptoSectors, fetchMacroSignals, fetchWatchlist, fetchTaoSubnets, fetchETFFlows, fetchPredictions, fetchEarthquakes, fetchWeatherAlerts, fetchFredData, fetchInternetOutages, isOutagesConfigured, fetchAisSignals, initAisStream, getAisStatus, disconnectAisStream, isAisConfigured, fetchCableActivity, fetchProtestEvents, getProtestStatus, fetchFlightDelays, fetchMilitaryFlights, fetchMilitaryVessels, initMilitaryVesselStream, isMilitaryVesselTrackingConfigured, initDB, updateBaseline, calculateDeviation, addToSignalHistory, saveSnapshot, cleanOldSnapshots, analysisWorker, fetchPizzIntStatus, fetchGdeltTensions, fetchNaturalEvents, fetchRecentAwards, fetchOilAnalytics } from '@/services';
 import { fetchCountryMarkets } from '@/services/polymarket';
 import { mlWorker } from '@/services/ml-worker';
 import { clusterNewsHybrid } from '@/services/clustering';
@@ -67,6 +67,7 @@ import {
   MacroSignalsPanel,
   WatchlistPanel,
   TaoSubnetPanel,
+  ETFFlowsPanel,
 } from '@/components';
 import type { SearchResult } from '@/components/SearchModal';
 import { collectStoryData } from '@/services/story-data';
@@ -1384,32 +1385,10 @@ export class App {
       const taoSubnetPanel = new TaoSubnetPanel();
       this.panels['tao-subnets'] = taoSubnetPanel;
 
-      // Crypto-specific news panels
-      const bitcoinPanel = new NewsPanel('bitcoin', 'Bitcoin');
-      this.attachRelatedAssetHandlers(bitcoinPanel);
-      this.newsPanels['bitcoin'] = bitcoinPanel;
-      this.panels['bitcoin'] = bitcoinPanel;
+      const etfFlowsPanel = new ETFFlowsPanel();
+      this.panels['etf-flows'] = etfFlowsPanel;
 
-      const ethereumPanel = new NewsPanel('ethereum', 'Ethereum');
-      this.attachRelatedAssetHandlers(ethereumPanel);
-      this.newsPanels['ethereum'] = ethereumPanel;
-      this.panels['ethereum'] = ethereumPanel;
-
-      const altcoinsPanel = new NewsPanel('altcoins', 'Altcoins');
-      this.attachRelatedAssetHandlers(altcoinsPanel);
-      this.newsPanels['altcoins'] = altcoinsPanel;
-      this.panels['altcoins'] = altcoinsPanel;
-
-      const defiPanel = new NewsPanel('defi', 'DeFi');
-      this.attachRelatedAssetHandlers(defiPanel);
-      this.newsPanels['defi'] = defiPanel;
-      this.panels['defi'] = defiPanel;
-
-      const nftPanel = new NewsPanel('nft', 'NFT & Digital Assets');
-      this.attachRelatedAssetHandlers(nftPanel);
-      this.newsPanels['nft'] = nftPanel;
-      this.panels['nft'] = nftPanel;
-
+      // Crypto-specific news panels (trimmed to 3: trading, finance, regulation)
       const cryptoRegulationPanel = new NewsPanel('regulation', 'Crypto Regulation');
       this.attachRelatedAssetHandlers(cryptoRegulationPanel);
       this.newsPanels['regulation'] = cryptoRegulationPanel;
@@ -2643,6 +2622,16 @@ export class App {
       } catch (e) {
         console.error('[App] TAO subnets load failed:', e);
       }
+
+      // ETF Flows
+      try {
+        const etfData = await fetchETFFlows();
+        if (etfData) {
+          (this.panels['etf-flows'] as ETFFlowsPanel)?.renderFlows(etfData);
+        }
+      } catch (e) {
+        console.error('[App] ETF flows load failed:', e);
+      }
     }
   }
 
@@ -3463,6 +3452,17 @@ export class App {
           console.error('[App] TAO subnets refresh failed:', e);
         }
       }, 300000); // 5 min
+
+      this.scheduleRefresh('etf-flows', async () => {
+        try {
+          const data = await fetchETFFlows();
+          if (data) {
+            (this.panels['etf-flows'] as ETFFlowsPanel)?.renderFlows(data);
+          }
+        } catch (e) {
+          console.error('[App] ETF flows refresh failed:', e);
+        }
+      }, 900000); // 15 min
     }
 
     // Refresh intelligence signals for CII (geopolitical variant only)

@@ -11642,3 +11642,101 @@ body.has-critical-banner .panels-grid {
   font-family: 'JetBrains Mono', monospace;
   color: var(--text-dim);
 }
+
+/* ── ETF Flows Panel ── */
+.etf-flows-container {
+  padding: 8px;
+}
+
+.etf-aggregate {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 10px;
+  background: var(--bg-card, #1a1a2e);
+  border-radius: 6px;
+  border: 1px solid var(--border-dim, #333);
+}
+
+.etf-agg-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.etf-agg-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim, #888);
+}
+
+.etf-agg-value {
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-primary, #e0e0e0);
+}
+
+.etf-agg-value.etf-inflow { color: #4ade80; }
+.etf-agg-value.etf-outflow { color: #f87171; }
+.etf-agg-value.etf-positive { color: #4ade80; }
+.etf-agg-value.etf-negative { color: #f87171; }
+
+.etf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+
+.etf-table thead th {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim, #888);
+  padding: 4px 6px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-dim, #333);
+  font-weight: 500;
+}
+
+.etf-table thead th:nth-child(3),
+.etf-table thead th:nth-child(4),
+.etf-table thead th:nth-child(5) {
+  text-align: right;
+}
+
+.etf-row {
+  border-bottom: 1px solid var(--border-dim, rgba(255,255,255,0.05));
+}
+
+.etf-row:hover {
+  background: rgba(255,255,255,0.03);
+}
+
+.etf-row td {
+  padding: 5px 6px;
+}
+
+.etf-ticker {
+  font-weight: 600;
+  color: var(--text-primary, #e0e0e0);
+}
+
+.etf-issuer {
+  color: var(--text-dim, #888);
+  font-size: 10px;
+}
+
+.etf-price,
+.etf-change,
+.etf-vol {
+  text-align: right;
+  color: var(--text-secondary, #bbb);
+}
+
+.etf-change.etf-positive { color: #4ade80; }
+.etf-change.etf-negative { color: #f87171; }

@@ -154,6 +154,15 @@ const ALLOWED_DOMAINS = [
   'www.imf.org',
   // Additional
   'news.ycombinator.com',
+  // Crypto variant domains
+  'bitcoinmagazine.com',
+  'www.coindesk.com',
+  'cointelegraph.com',
+  'www.theblock.co',
+  'decrypt.co',
+  'cryptoslate.com',
+  'thedefiant.io',
+  'nftevening.com',
 ];
 
 // CORS helper - allow worldmonitor.app and Vercel preview domains

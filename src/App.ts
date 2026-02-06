@@ -2466,6 +2466,14 @@ export class App {
       { key: 'dev', feeds: FEEDS.dev },
       { key: 'github', feeds: FEEDS.github },
       { key: 'ipo', feeds: FEEDS.ipo },
+      // Crypto variant categories
+      { key: 'bitcoin', feeds: FEEDS.bitcoin },
+      { key: 'ethereum', feeds: FEEDS.ethereum },
+      { key: 'altcoins', feeds: FEEDS.altcoins },
+      { key: 'defi', feeds: FEEDS.defi },
+      { key: 'nft', feeds: FEEDS.nft },
+      { key: 'regulation', feeds: FEEDS.regulation },
+      { key: 'trading', feeds: FEEDS.trading },
     ];
     // Filter to only categories that have feeds defined
     const categories = allCategories.filter(c => c.feeds && c.feeds.length > 0);

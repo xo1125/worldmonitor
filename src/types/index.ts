@@ -141,6 +141,8 @@ export interface WatchlistData {
   symbol: string;
   price: number;
   change: number;
+  marketCap?: number;
+  volume?: number;
 }
 
 // TAO Subnet data
@@ -151,6 +153,8 @@ export interface TaoSubnet {
   validators?: number;
   registrations?: number;
   status: 'active' | 'inactive' | 'unknown';
+  taoPrice?: number;
+  taoChange?: number;
 }
 
 export type EscalationTrend = 'escalating' | 'stable' | 'de-escalating';

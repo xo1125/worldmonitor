@@ -6669,7 +6669,7 @@ a.prediction-link:hover {
     display: none !important;
   }
 
-  /* Show only X logo on mobile, hide @eliehabib text */
+  /* Show only X logo on mobile, hide credit text */
   .credit-link .credit-text {
     display: none;
   }
@@ -11483,6 +11483,23 @@ body.has-critical-banner .panels-grid {
 .signal-bearish { color: #ff4444; }
 .signal-neutral { color: #ffc832; }
 
+/* Individual signal card (solo panel) */
+.signal-card-solo {
+  padding: 8px;
+}
+
+.signal-card-solo.signal-bullish {
+  border-left: 3px solid rgba(68, 255, 136, 0.5);
+}
+
+.signal-card-solo.signal-bearish {
+  border-left: 3px solid rgba(255, 68, 68, 0.5);
+}
+
+.signal-card-solo.signal-neutral {
+  border-left: 3px solid rgba(255, 200, 50, 0.5);
+}
+
 /* ============================================
    WATCHLIST PANEL — Compact Token Table
    ============================================ */
@@ -11492,7 +11509,7 @@ body.has-critical-banner .panels-grid {
 
 .watchlist-header-row {
   display: grid;
-  grid-template-columns: 60px 1fr 90px 70px;
+  grid-template-columns: 50px 1fr 80px 65px 65px 55px;
   gap: 4px;
   padding: 4px 0;
   border-bottom: 1px solid var(--border);
@@ -11505,7 +11522,7 @@ body.has-critical-banner .panels-grid {
 
 .watchlist-row {
   display: grid;
-  grid-template-columns: 60px 1fr 90px 70px;
+  grid-template-columns: 50px 1fr 80px 65px 65px 55px;
   gap: 4px;
   padding: 6px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
@@ -11537,6 +11554,14 @@ body.has-critical-banner .panels-grid {
   font-size: 12px;
   font-family: 'JetBrains Mono', monospace;
   color: var(--text);
+  text-align: right;
+}
+
+.watchlist-mcap,
+.watchlist-vol {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-dim);
   text-align: right;
 }
 
@@ -11642,6 +11667,42 @@ body.has-critical-banner .panels-grid {
   font-family: 'JetBrains Mono', monospace;
   color: var(--text-dim);
 }
+
+.tao-price-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.tao-price-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tao-price-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.tao-price-change {
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.tao-price-change.change-up { color: #44ff88; }
+.tao-price-change.change-down { color: #ff4444; }
+.tao-price-change.change-flat { color: var(--text-dim); }
 
 /* ── ETF Flows Panel ── */
 .etf-flows-container {

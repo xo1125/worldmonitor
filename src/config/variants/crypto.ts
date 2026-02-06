@@ -86,7 +86,12 @@ export const FEEDS: Record<string, Feed[]> = {
 
 // Panel configuration for crypto variant — command center layout order
 export const DEFAULT_PANELS: Record<string, PanelConfig> = {
-  'macro-signals': { name: 'Market Radar', enabled: true, priority: 1 },
+  'signal-liquidity': { name: 'Liquidity', enabled: true, priority: 1 },
+  'signal-flow': { name: 'Flow Structure', enabled: true, priority: 1 },
+  'signal-macro': { name: 'Macro Regime', enabled: true, priority: 1 },
+  'signal-technical': { name: 'Technical Trend', enabled: true, priority: 1 },
+  'signal-hashrate': { name: 'Hash Rate', enabled: true, priority: 1 },
+  'signal-mining': { name: 'Mining Cost', enabled: true, priority: 1 },
   commodities: { name: 'Commodities / VIX', enabled: true, priority: 1 },
   watchlist: { name: 'Watchlist', enabled: true, priority: 1 },
   'etf-flows': { name: 'BTC ETF Tracker', enabled: true, priority: 1 },

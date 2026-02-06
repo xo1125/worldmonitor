@@ -6,6 +6,42 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 const TICKERS = ['JPY=X', 'BTC-USD', 'QQQ', 'XLP'];
 
+// Mining cost model constants
+const DAILY_BTC_MINED = 450; // post-halving: 3.125 BTC × 144 blocks
+const AVG_EFFICIENCY_J_PER_TH = 25; // modern ASIC (S21-class)
+const AVG_ELECTRICITY_USD_PER_KWH = 0.05;
+
+async function fetchBTCHashRate() {
+  try {
+    const url = 'https://mempool.space/api/v1/mining/hashrate/1m';
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    const hashrates = data.hashrates;
+    if (!hashrates || hashrates.length === 0) return null;
+
+    // Convert to EH/s series
+    const ehSeries = hashrates.map(h => h.avgHashrate / 1e18);
+    const current = ehSeries[ehSeries.length - 1];
+    const thirtyDaysAgo = ehSeries.length > 30 ? ehSeries[ehSeries.length - 31] : ehSeries[0];
+    const sevenDaysAgo = ehSeries.length > 7 ? ehSeries[ehSeries.length - 8] : ehSeries[0];
+
+    const change30d = thirtyDaysAgo > 0 ? ((current - thirtyDaysAgo) / thirtyDaysAgo) * 100 : 0;
+    const change7d = sevenDaysAgo > 0 ? ((current - sevenDaysAgo) / sevenDaysAgo) * 100 : 0;
+
+    return {
+      currentEH: current,
+      change30d,
+      change7d,
+      sparkline: ehSeries.slice(-14),
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function fetchYahooQuote(symbol) {
   try {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=60d&interval=1d`;
@@ -64,7 +100,7 @@ function calcVWAP(closes, volumes) {
   return sumV > 0 ? sumPV / sumV : closes[closes.length - 1];
 }
 
-function computeSignals(quotes) {
+function computeSignals(quotes, hashRateData) {
   const jpy = quotes['JPY=X'];
   const btc = quotes['BTC-USD'];
   const qqq = quotes['QQQ'];
@@ -162,6 +198,57 @@ function computeSignals(quotes) {
     });
   }
 
+  // Signal 5: Hash Rate
+  if (hashRateData) {
+    const { currentEH, change30d, change7d, sparkline: hrSparkline } = hashRateData;
+    const isGrowing = change30d > 5;
+    const isDeclining = change30d < -5;
+    signals.push({
+      name: 'Hash Rate',
+      label: isGrowing ? 'GROWING' : isDeclining ? 'DECLINING' : 'STABLE',
+      status: isGrowing ? 'bullish' : isDeclining ? 'bearish' : 'neutral',
+      value: `${currentEH.toFixed(1)} EH/s`,
+      detail: isGrowing ? `Network hashrate up ${change30d.toFixed(1)}% in 30d → miners confident`
+        : isDeclining ? `Hashrate down ${Math.abs(change30d).toFixed(1)}% in 30d → miner capitulation risk`
+        : `Hashrate stable (${change30d > 0 ? '+' : ''}${change30d.toFixed(1)}% 30d)`,
+      sparkline: hrSparkline,
+      supportingData: {
+        'Current': `${currentEH.toFixed(1)} EH/s`,
+        '30d': `${change30d > 0 ? '+' : ''}${change30d.toFixed(1)}%`,
+        '7d': `${change7d > 0 ? '+' : ''}${change7d.toFixed(1)}%`,
+      },
+    });
+
+    // Signal 6: Mining Cost
+    if (btc) {
+      const hashrateTH = currentEH * 1e6; // EH/s to TH/s
+      const dailyEnergyCost = (hashrateTH * AVG_EFFICIENCY_J_PER_TH * 24) / 1000 * AVG_ELECTRICITY_USD_PER_KWH;
+      const costPerBTC = dailyEnergyCost / DAILY_BTC_MINED;
+      const btcPrice = btc.price;
+      const margin = btcPrice > 0 ? ((btcPrice - costPerBTC) / btcPrice) * 100 : 0;
+      const hashprice = (btcPrice * DAILY_BTC_MINED) / hashrateTH; // USD/TH/day
+
+      const isProfitable = margin > 50;
+      const isSqueeze = margin < 0;
+      signals.push({
+        name: 'Mining Cost',
+        label: isProfitable ? 'PROFITABLE' : isSqueeze ? 'SQUEEZE' : 'TIGHT',
+        status: isProfitable ? 'bullish' : isSqueeze ? 'bearish' : 'neutral',
+        value: `Est. $${Math.round(costPerBTC).toLocaleString()}/BTC`,
+        detail: isProfitable ? `Miners profitable (${margin.toFixed(0)}% margin)`
+          : isSqueeze ? `Mining unprofitable → capitulation risk`
+          : `Margins tightening (${margin.toFixed(0)}% margin)`,
+        sparkline: hrSparkline,
+        supportingData: {
+          'Est. Cost': `$${Math.round(costPerBTC).toLocaleString()}`,
+          'BTC Price': `$${btcPrice?.toLocaleString()}`,
+          'Margin': `${margin.toFixed(0)}%`,
+          'Hashprice': `$${hashprice.toFixed(2)}/TH/d`,
+        },
+      });
+    }
+  }
+
   // Overall verdict
   const allBullish = signals.every(s => s.status === 'bullish');
   const verdict = allBullish ? 'BUY' : 'CASH';
@@ -184,14 +271,17 @@ export default async function handler(req) {
   }
 
   try {
-    // Fetch all quotes in parallel
-    const results = await Promise.all(TICKERS.map(fetchYahooQuote));
+    // Fetch all quotes + hashrate in parallel
+    const [yahooResults, hashRateData] = await Promise.all([
+      Promise.all(TICKERS.map(fetchYahooQuote)),
+      fetchBTCHashRate(),
+    ]);
     const quotes = {};
     TICKERS.forEach((ticker, i) => {
-      if (results[i]) quotes[ticker] = results[i];
+      if (yahooResults[i]) quotes[ticker] = yahooResults[i];
     });
 
-    const signalResult = computeSignals(quotes);
+    const signalResult = computeSignals(quotes, hashRateData);
     const responseBody = JSON.stringify(signalResult);
 
     // Cache the result

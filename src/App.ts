@@ -64,7 +64,7 @@ import {
   TechReadinessPanel,
   StablecoinPanel,
   CryptoHeatmapPanel,
-  MacroSignalsPanel,
+  SignalCardPanel,
   WatchlistPanel,
   TaoSubnetPanel,
   ETFFlowsPanel,
@@ -1376,8 +1376,18 @@ export class App {
       const cryptoHeatmapPanel = new CryptoHeatmapPanel();
       this.panels['crypto-heatmap'] = cryptoHeatmapPanel;
 
-      const macroSignalsPanel = new MacroSignalsPanel();
-      this.panels['macro-signals'] = macroSignalsPanel;
+      // Individual signal panels (split from Market Radar)
+      const SIGNAL_PANELS: Array<[string, string]> = [
+        ['signal-liquidity', 'Liquidity'],
+        ['signal-flow', 'Flow Structure'],
+        ['signal-macro', 'Macro Regime'],
+        ['signal-technical', 'Technical Trend'],
+        ['signal-hashrate', 'Hash Rate'],
+        ['signal-mining', 'Mining Cost'],
+      ];
+      for (const [panelId, panelTitle] of SIGNAL_PANELS) {
+        this.panels[panelId] = new SignalCardPanel(panelId, panelTitle);
+      }
 
       const watchlistPanel = new WatchlistPanel();
       this.panels['watchlist'] = watchlistPanel;
@@ -2601,7 +2611,21 @@ export class App {
       try {
         const macroData = await fetchMacroSignals();
         if (macroData) {
-          (this.panels['macro-signals'] as MacroSignalsPanel)?.renderSignals(macroData);
+          // Map signal names to panel IDs
+          const signalPanelMap: Record<string, string> = {
+            'Liquidity': 'signal-liquidity',
+            'Flow Structure': 'signal-flow',
+            'Macro Regime': 'signal-macro',
+            'Technical Trend': 'signal-technical',
+            'Hash Rate': 'signal-hashrate',
+            'Mining Cost': 'signal-mining',
+          };
+          for (const signal of macroData.signals) {
+            const panelId = signalPanelMap[signal.name];
+            if (panelId) {
+              (this.panels[panelId] as SignalCardPanel)?.renderSignal(signal);
+            }
+          }
         }
       } catch (e) {
         console.error('[App] Macro signals load failed:', e);

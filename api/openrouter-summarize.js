@@ -152,23 +152,19 @@ export default async function handler(request) {
     // Crypto variant system prompt: cryptocurrency market intelligence brief
     const CRYPTO_SYSTEM_PROMPT = `${dateContext}
 
-You are a cryptocurrency market intelligence analyst. Produce a concise brief covering the crypto ecosystem.
-
-Structure your response with clear sections:
-**Market Overview** - Overall market conditions, BTC/ETH momentum, total market cap direction, and dominant sentiment (fear/greed).
-**Key Moves** - Notable token price action, catalysts (ETF flows, whale movements, token unlocks, listings/delistings), and volume anomalies.
-**Regulatory** - Developments from SEC, CFTC, DOJ, MiCA, or other global regulators affecting crypto markets.
-**DeFi Updates** - Protocol launches, TVL shifts, governance proposals, yield changes, and ecosystem developments.
-**Risk Alerts** - Exploits, rug pulls, exchange solvency concerns, bridge hacks, smart contract vulnerabilities, or stablecoin depegs.
+You are a crypto trading desk analyst writing a market brief. Be specific and data-driven.
 
 Rules:
-- Focus ONLY on cryptocurrency, blockchain, DeFi, NFTs, and Web3 topics
-- IGNORE military operations, geopolitical theater postures, geographic convergence zones, and non-crypto macro unless directly impacting crypto prices
-- Lead each section with the most significant item
-- Be specific: name tokens, protocols, exchanges, and dollar amounts
-- Keep each section to 1-2 sentences
-- If a section has no news, omit it entirely
-- No meta-commentary, no TV-style openings`;
+- ONLY discuss events from the headlines provided. Do NOT add general knowledge or filler.
+- Name specific tokens, protocols, exchanges, and dollar amounts from the headlines.
+- If a headline mentions a price move, include the percentage or dollar figure.
+- If a headline mentions regulation, name the agency and action.
+- If a headline mentions a hack/exploit, name the protocol and amount.
+- Write 3-5 short bullet points, each one sentence.
+- Start each bullet with the most important noun (token name, exchange, protocol).
+- NO introductions, NO conclusions, NO filler like "the crypto market continues to..."
+- If you have nothing specific to say about a topic, skip it entirely.
+- NEVER make up information not in the headlines.`;
 
     if (mode === 'brief') {
       if (isCryptoVariant) {
@@ -198,7 +194,7 @@ Rules:
 - No bullet points, no meta-commentary`;
       }
       userPrompt = isCryptoVariant
-        ? `Produce a crypto market brief from these headlines:\n${headlineText}${intelSection}`
+        ? `Write bullet points covering ONLY what these headlines report. Be specific:\n${headlineText}`
         : `Summarize the top story:\n${headlineText}${intelSection}`;
     } else if (mode === 'analysis') {
       if (isCryptoVariant) {
@@ -225,7 +221,7 @@ Rules:
 - Connect dots, be specific about implications`;
       }
       userPrompt = isCryptoVariant
-        ? `Analyze the key crypto market dynamics and risks:\n${headlineText}${intelSection}`
+        ? `What are the specific actionable takeaways from these headlines?\n${headlineText}`
         : isTechVariant
         ? `What's the key tech trend or development?\n${headlineText}${intelSection}`
         : `What's the key pattern or risk?\n${headlineText}${intelSection}`;
@@ -236,7 +232,7 @@ Rules:
         ? `${dateContext}\n\nSynthesize tech news in 2 sentences. Focus on startups, AI, funding, products. Ignore politics unless directly about tech regulation.`
         : `${dateContext}\n\nSynthesize in 2 sentences max. Lead with substance. NEVER start with "Breaking news" or "Tonight" - just state the insight directly. CRITICAL focal points with news-signal convergence are significant.`;
       userPrompt = isCryptoVariant
-        ? `Key crypto market takeaway:\n${headlineText}${intelSection}`
+        ? `One-line takeaway from these headlines:\n${headlineText}`
         : `Key takeaway:\n${headlineText}${intelSection}`;
     }
 
@@ -255,7 +251,7 @@ Rules:
           { role: 'user', content: userPrompt },
         ],
         temperature: 0.3,
-        max_tokens: isCryptoVariant ? 400 : 150,
+        max_tokens: isCryptoVariant ? 250 : 150,
         top_p: 0.9,
       }),
     });

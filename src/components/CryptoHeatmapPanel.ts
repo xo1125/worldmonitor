@@ -21,7 +21,7 @@ export class CryptoHeatmapPanel extends Panel {
           const sectorClass = sector.change >= 0 ? 'sector-up' : 'sector-down';
           return `
           <div class="crypto-sector-cell ${sectorClass}">
-            <div class="crypto-sector-name">${escapeHtml(sector.name)}</div>
+            <div class="crypto-sector-name">${escapeHtml(this.truncateSectorName(sector.name))}</div>
             <div class="crypto-sector-change ${getChangeClass(sector.change)}">${formatChange(sector.change)}</div>
           </div>
         `;
@@ -30,5 +30,14 @@ export class CryptoHeatmapPanel extends Panel {
       '</div>';
 
     this.setContent(html);
+  }
+
+  private truncateSectorName(name: string): string {
+    const SHORT_NAMES: Record<string, string> = {
+      'Infrastructure': 'Infra',
+      'Memecoins': 'Memes',
+      'AI Tokens': 'AI',
+    };
+    return SHORT_NAMES[name] ?? name;
   }
 }

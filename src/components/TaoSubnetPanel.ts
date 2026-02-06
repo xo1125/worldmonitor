@@ -63,7 +63,23 @@ export class TaoSubnetPanel extends Panel {
       })
       .join('');
 
-    const html = `<div class="tao-subnets-grid">${cards}</div>`;
+    // TAO price header (shared across all subnets)
+    const taoPrice = data[0]?.taoPrice;
+    const taoChange = data[0]?.taoChange;
+    let priceHeader = '';
+    if (taoPrice !== undefined) {
+      const changeClass = (taoChange ?? 0) > 0 ? 'change-up' : (taoChange ?? 0) < 0 ? 'change-down' : 'change-flat';
+      const changePrefix = (taoChange ?? 0) > 0 ? '+' : '';
+      priceHeader = `
+        <div class="tao-price-header">
+          <span class="tao-price-label">TAO</span>
+          <span class="tao-price-value">${taoPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          <span class="tao-price-change ${changeClass}">${changePrefix}${(taoChange ?? 0).toFixed(2)}%</span>
+        </div>
+      `;
+    }
+
+    const html = `${priceHeader}<div class="tao-subnets-grid">${cards}</div>`;
     this.setContent(html);
   }
 }

@@ -278,10 +278,10 @@ export async function fetchMacroSignals(): Promise<MacroSignalResult | null> {
 export async function fetchWatchlist(): Promise<WatchlistData[]> {
   try {
     const ids = WATCHLIST_IDS.join(',');
-    const url = `/api/coingecko?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
+    const url = `/api/coingecko?ids=${ids}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`;
     const response = await fetchWithProxy(url);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data: CoinGeckoResponse = await response.json();
+    const data: CoinGeckoExtendedResponse = await response.json();
 
     return Object.entries(WATCHLIST_MAP).map(([id, info]) => {
       const coinData = data[id];
@@ -290,6 +290,8 @@ export async function fetchWatchlist(): Promise<WatchlistData[]> {
         symbol: info.symbol,
         price: coinData?.usd ?? 0,
         change: coinData?.usd_24h_change ?? 0,
+        marketCap: coinData?.usd_market_cap ?? undefined,
+        volume: coinData?.usd_24h_vol ?? undefined,
       };
     });
   } catch (e) {
@@ -301,17 +303,30 @@ export async function fetchWatchlist(): Promise<WatchlistData[]> {
 // TAO Subnet data
 export async function fetchTaoSubnets(): Promise<TaoSubnet[]> {
   try {
-    const response = await fetchWithProxy('/api/tao-subnets');
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    return data.subnets || TAO_SUBNETS.map(s => ({
+    const [subnetResponse, priceResponse] = await Promise.all([
+      fetchWithProxy('/api/tao-subnets'),
+      fetchWithProxy('/api/coingecko?ids=bittensor&vs_currencies=usd&include_24hr_change=true'),
+    ]);
+
+    let taoPrice: number | undefined;
+    let taoChange: number | undefined;
+    if (priceResponse.ok) {
+      const priceData: CoinGeckoResponse = await priceResponse.json();
+      taoPrice = priceData.bittensor?.usd;
+      taoChange = priceData.bittensor?.usd_24h_change;
+    }
+
+    if (!subnetResponse.ok) throw new Error(`HTTP ${subnetResponse.status}`);
+    const data = await subnetResponse.json();
+    const subnets = data.subnets || TAO_SUBNETS.map(s => ({
       name: s.name,
       netuid: s.netuid,
       status: 'unknown' as const,
     }));
+
+    return subnets.map((s: TaoSubnet) => ({ ...s, taoPrice, taoChange }));
   } catch (e) {
     console.error('Failed to fetch TAO subnets:', e);
-    // Return static fallback
     return TAO_SUBNETS.map(s => ({
       name: s.name,
       netuid: s.netuid,

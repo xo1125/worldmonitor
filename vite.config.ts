@@ -235,6 +235,42 @@ export default defineConfig({
           });
         },
       },
+      // RSS Proxy - handled by Vercel edge function in prod
+      // In dev, proxy to the target RSS URL directly
+      '/api/rss-proxy': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        selfHandleResponse: true,
+        configure: (proxy) => {
+          proxy.on('proxyReq', async (_proxyReq, req, res) => {
+            try {
+              const reqUrl = new URL(req.url || '', 'http://localhost');
+              const feedUrl = reqUrl.searchParams.get('url');
+              if (!feedUrl) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Missing url parameter' }));
+                return;
+              }
+              const controller = new AbortController();
+              const timeout = setTimeout(() => controller.abort(), 15000);
+              const response = await fetch(feedUrl, {
+                signal: controller.signal,
+                headers: { 'User-Agent': 'Mozilla/5.0 WorldMonitor/2.0', 'Accept': 'application/rss+xml, application/xml, text/xml, */*' },
+              });
+              clearTimeout(timeout);
+              const text = await response.text();
+              res.writeHead(response.status, {
+                'Content-Type': response.headers.get('content-type') || 'application/xml',
+                'Access-Control-Allow-Origin': '*',
+              });
+              res.end(text);
+            } catch (err: unknown) {
+              res.writeHead(502, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: String(err) }));
+            }
+          });
+        },
+      },
       // FRED Economic Data - handled by Vercel serverless function in prod
       // In dev, we proxy to the API directly with the key from .env
       '/api/fred-data': {

@@ -102,6 +102,37 @@ export interface CryptoData {
   change: number;
 }
 
+export interface StablecoinData {
+  name: string;
+  symbol: string;
+  price: number;
+  change: number;
+  marketCap: number;
+  volume24h: number;
+}
+
+export interface CryptoSectorData {
+  name: string;
+  change: number;
+  coins: Array<{ name: string; symbol: string; change: number }>;
+}
+
+export type MacroSignalStatus = 'bullish' | 'bearish' | 'neutral';
+
+export interface MacroSignal {
+  name: string;
+  label: string;
+  status: MacroSignalStatus;
+  value: string;
+  detail: string;
+}
+
+export interface MacroSignalResult {
+  verdict: 'BUY' | 'CASH';
+  signals: MacroSignal[];
+  lastUpdated: Date;
+}
+
 export type EscalationTrend = 'escalating' | 'stable' | 'de-escalating';
 
 export interface DynamicEscalationScore {

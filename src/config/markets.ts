@@ -55,10 +55,52 @@ export const MARKET_SYMBOLS: MarketSymbol[] = [
   { symbol: 'BAC', name: 'BofA', display: 'BAC' },
 ];
 
-export const CRYPTO_IDS = ['bitcoin', 'ethereum', 'solana'] as const;
+const SITE_VARIANT = import.meta.env.VITE_VARIANT || 'full';
 
-export const CRYPTO_MAP: Record<string, { name: string; symbol: string }> = {
+const CRYPTO_MAP_BASE: Record<string, { name: string; symbol: string }> = {
   bitcoin: { name: 'Bitcoin', symbol: 'BTC' },
   ethereum: { name: 'Ethereum', symbol: 'ETH' },
   solana: { name: 'Solana', symbol: 'SOL' },
 };
+
+const CRYPTO_MAP_EXTENDED: Record<string, { name: string; symbol: string }> = {
+  ...CRYPTO_MAP_BASE,
+  bittensor: { name: 'Bittensor', symbol: 'TAO' },
+  'aerodrome-finance': { name: 'Aerodrome', symbol: 'AERO' },
+  ripple: { name: 'XRP', symbol: 'XRP' },
+  cardano: { name: 'Cardano', symbol: 'ADA' },
+  dogecoin: { name: 'Dogecoin', symbol: 'DOGE' },
+  'avalanche-2': { name: 'Avalanche', symbol: 'AVAX' },
+  polkadot: { name: 'Polkadot', symbol: 'DOT' },
+  chainlink: { name: 'Chainlink', symbol: 'LINK' },
+  uniswap: { name: 'Uniswap', symbol: 'UNI' },
+  litecoin: { name: 'Litecoin', symbol: 'LTC' },
+};
+
+export const CRYPTO_MAP = SITE_VARIANT === 'crypto' ? CRYPTO_MAP_EXTENDED : CRYPTO_MAP_BASE;
+export const CRYPTO_IDS = Object.keys(CRYPTO_MAP);
+
+// Stablecoin tracking (used by crypto variant)
+export const STABLECOIN_IDS = ['tether', 'usd-coin', 'dai'] as const;
+export const STABLECOIN_MAP: Record<string, { name: string; symbol: string }> = {
+  tether: { name: 'Tether', symbol: 'USDT' },
+  'usd-coin': { name: 'USD Coin', symbol: 'USDC' },
+  dai: { name: 'Dai', symbol: 'DAI' },
+};
+
+// Crypto sector definitions for heatmap (used by crypto variant)
+export interface CryptoSector {
+  name: string;
+  coins: string[]; // CoinGecko IDs
+}
+
+export const CRYPTO_SECTORS: CryptoSector[] = [
+  { name: 'Layer 1', coins: ['bitcoin', 'ethereum', 'solana', 'cardano', 'avalanche-2', 'polkadot'] },
+  { name: 'DeFi', coins: ['uniswap', 'aave', 'maker', 'lido-dao', 'curve-dao-token', 'compound-governance-token'] },
+  { name: 'Layer 2', coins: ['matic-network', 'arbitrum', 'optimism', 'starknet'] },
+  { name: 'AI Tokens', coins: ['bittensor', 'render-token', 'fetch-ai', 'ocean-protocol'] },
+  { name: 'Memecoins', coins: ['dogecoin', 'shiba-inu', 'pepe', 'bonk'] },
+  { name: 'Gaming', coins: ['the-sandbox', 'axie-infinity', 'immutable-x', 'gala'] },
+  { name: 'Privacy', coins: ['monero', 'zcash'] },
+  { name: 'Infrastructure', coins: ['chainlink', 'the-graph', 'filecoin', 'helium'] },
+];

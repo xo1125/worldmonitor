@@ -393,7 +393,7 @@ export class InsightsPanel extends Panel {
   private renderWorldBrief(brief: string): string {
     return `
       <div class="insights-brief">
-        <div class="insights-section-title">${SITE_VARIANT === 'tech' ? '🚀 TECH BRIEF' : '🌍 WORLD BRIEF'}</div>
+        <div class="insights-section-title">${SITE_VARIANT === 'tech' ? '🚀 TECH BRIEF' : SITE_VARIANT === 'crypto' ? '₿ CRYPTO BRIEF' : '🌍 WORLD BRIEF'}</div>
         <div class="insights-brief-text">${escapeHtml(brief)}</div>
       </div>
     `;

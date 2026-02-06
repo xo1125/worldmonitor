@@ -189,6 +189,24 @@ export const SOURCE_TIERS: Record<string, number> = {
   'ArXiv AI': 4,
   'AI News': 4,
   'Layoffs News': 4,
+
+  // Tier 2 - Crypto Sources
+  'CoinDesk': 2,
+  'CoinDesk Bitcoin': 2,
+  'CoinDesk Ethereum': 2,
+  'CoinTelegraph': 2,
+  'The Block': 2,
+  'Decrypt': 2,
+  'Bitcoin Magazine': 2,
+  'Bloomberg Crypto': 2,
+  'Reuters Crypto': 2,
+  'CNBC Crypto': 2,
+
+  // Tier 3 - Crypto Specialty
+  'CryptoSlate': 3,
+  'The Defiant': 3,
+  'NFT Evening': 3,
+  'Altcoin Buzz': 3,
 };
 
 export function getSourceTier(sourceName: string): number {
@@ -253,6 +271,13 @@ export const SOURCE_TYPES: Record<string, SourceType> = {
   'This Week in Startups': 'tech', 'The Twenty Minute VC': 'tech',
   'Hard Fork (NYT)': 'tech', 'Pivot (Vox)': 'tech', 'Stratechery': 'tech',
   'Benedict Evans': 'tech', 'How I Built This': 'tech', 'Masters of Scale': 'tech',
+
+  // Crypto sources
+  'CoinDesk': 'market', 'CoinDesk Bitcoin': 'market', 'CoinDesk Ethereum': 'market',
+  'CoinTelegraph': 'market', 'The Block': 'market', 'Decrypt': 'tech',
+  'Bitcoin Magazine': 'market', 'CryptoSlate': 'market', 'The Defiant': 'market',
+  'NFT Evening': 'tech', 'Altcoin Buzz': 'market',
+  'Bloomberg Crypto': 'market', 'Reuters Crypto': 'market', 'CNBC Crypto': 'market',
 };
 
 export function getSourceType(sourceName: string): SourceType {
@@ -641,8 +666,11 @@ const TECH_FEEDS: Record<string, Feed[]> = {
   ],
 };
 
+// Crypto variant feeds (imported from variant config)
+import { FEEDS as CRYPTO_FEEDS } from './variants/crypto';
+
 // Variant-aware exports
-export const FEEDS = SITE_VARIANT === 'tech' ? TECH_FEEDS : FULL_FEEDS;
+export const FEEDS = SITE_VARIANT === 'tech' ? TECH_FEEDS : SITE_VARIANT === 'crypto' ? CRYPTO_FEEDS : FULL_FEEDS;
 
 export const INTEL_SOURCES: Feed[] = [
   // Defense & Security (Tier 1)

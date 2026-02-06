@@ -36,6 +36,11 @@ const TECH_TAGS = [
   'elon-musk', 'business', 'economy',
 ];
 
+const CRYPTO_TAGS = [
+  'crypto', 'bitcoin', 'ethereum', 'defi',
+  'nft', 'blockchain', 'web3', 'economy',
+];
+
 const EXCLUDE_KEYWORDS = [
   'nba', 'nfl', 'mlb', 'nhl', 'fifa', 'world cup', 'super bowl', 'championship',
   'playoffs', 'oscar', 'grammy', 'emmy', 'box office', 'movie', 'album', 'song',
@@ -99,7 +104,7 @@ async function fetchTopMarkets(): Promise<PredictionMarket[]> {
 
 export async function fetchPredictions(): Promise<PredictionMarket[]> {
   return breaker.execute(async () => {
-    const tags = SITE_VARIANT === 'tech' ? TECH_TAGS : GEOPOLITICAL_TAGS;
+    const tags = SITE_VARIANT === 'tech' ? TECH_TAGS : SITE_VARIANT === 'crypto' ? CRYPTO_TAGS : GEOPOLITICAL_TAGS;
 
     const eventResults = await Promise.all(tags.map(tag => fetchEventsByTag(tag, 20)));
 

@@ -12,7 +12,7 @@ import {
   STORAGE_KEYS,
   SITE_VARIANT,
 } from '@/config';
-import { fetchCategoryFeeds, fetchMultipleStocks, fetchCrypto, fetchPredictions, fetchEarthquakes, fetchWeatherAlerts, fetchFredData, fetchInternetOutages, isOutagesConfigured, fetchAisSignals, initAisStream, getAisStatus, disconnectAisStream, isAisConfigured, fetchCableActivity, fetchProtestEvents, getProtestStatus, fetchFlightDelays, fetchMilitaryFlights, fetchMilitaryVessels, initMilitaryVesselStream, isMilitaryVesselTrackingConfigured, initDB, updateBaseline, calculateDeviation, addToSignalHistory, saveSnapshot, cleanOldSnapshots, analysisWorker, fetchPizzIntStatus, fetchGdeltTensions, fetchNaturalEvents, fetchRecentAwards, fetchOilAnalytics } from '@/services';
+import { fetchCategoryFeeds, fetchMultipleStocks, fetchCrypto, fetchStablecoins, fetchCryptoSectors, fetchMacroSignals, fetchPredictions, fetchEarthquakes, fetchWeatherAlerts, fetchFredData, fetchInternetOutages, isOutagesConfigured, fetchAisSignals, initAisStream, getAisStatus, disconnectAisStream, isAisConfigured, fetchCableActivity, fetchProtestEvents, getProtestStatus, fetchFlightDelays, fetchMilitaryFlights, fetchMilitaryVessels, initMilitaryVesselStream, isMilitaryVesselTrackingConfigured, initDB, updateBaseline, calculateDeviation, addToSignalHistory, saveSnapshot, cleanOldSnapshots, analysisWorker, fetchPizzIntStatus, fetchGdeltTensions, fetchNaturalEvents, fetchRecentAwards, fetchOilAnalytics } from '@/services';
 import { fetchCountryMarkets } from '@/services/polymarket';
 import { mlWorker } from '@/services/ml-worker';
 import { clusterNewsHybrid } from '@/services/clustering';
@@ -62,6 +62,9 @@ import {
   ServiceStatusPanel,
   InsightsPanel,
   TechReadinessPanel,
+  StablecoinPanel,
+  CryptoHeatmapPanel,
+  MacroSignalsPanel,
 } from '@/components';
 import type { SearchResult } from '@/components/SearchModal';
 import { collectStoryData } from '@/services/story-data';
@@ -327,8 +330,8 @@ export class App {
   }
 
   private setupPizzIntIndicator(): void {
-    // Skip DEFCON indicator for tech/startup variant
-    if (SITE_VARIANT === 'tech') return;
+    // Skip DEFCON indicator for tech/crypto variants
+    if (SITE_VARIANT !== 'full') return;
 
     this.pizzintIndicator = new PizzIntIndicator();
     const headerLeft = this.container.querySelector('.header-left');
@@ -661,6 +664,11 @@ export class App {
       ? {
           placeholder: 'Search companies, AI labs, startups, events...',
           hint: 'HQs • Companies • AI Labs • Startups • Accelerators • Events',
+        }
+      : SITE_VARIANT === 'crypto'
+      ? {
+          placeholder: 'Search crypto, tokens, DeFi, stablecoins...',
+          hint: 'Crypto • DeFi • Stablecoins • Sectors • News • Markets',
         }
       : {
           placeholder: 'Search news, pipelines, bases, markets...',
@@ -1075,8 +1083,8 @@ export class App {
       <div class="header">
         <div class="header-left">
           <div class="variant-switcher">
-            <a href="${SITE_VARIANT === 'tech' ? 'https://worldmonitor.app' : '#'}"
-               class="variant-option ${SITE_VARIANT !== 'tech' ? 'active' : ''}"
+            <a href="${SITE_VARIANT === 'full' ? '#' : 'https://worldmonitor.app'}"
+               class="variant-option ${SITE_VARIANT === 'full' ? 'active' : ''}"
                data-variant="world"
                title="Geopolitical Intelligence">
               <span class="variant-icon">🌍</span>
@@ -1089,6 +1097,14 @@ export class App {
                title="Tech & AI Intelligence">
               <span class="variant-icon">💻</span>
               <span class="variant-label">TECH</span>
+            </a>
+            <span class="variant-divider"></span>
+            <a href="${SITE_VARIANT === 'crypto' ? '#' : 'https://crypto.worldmonitor.app'}"
+               class="variant-option ${SITE_VARIANT === 'crypto' ? 'active' : ''}"
+               data-variant="crypto"
+               title="Crypto Intelligence">
+              <span class="variant-icon">₿</span>
+              <span class="variant-label">CRYPTO</span>
             </a>
           </div>
           <span class="logo">MONITOR</span><span class="version">v${__APP_VERSION__}</span>
@@ -1129,7 +1145,7 @@ export class App {
         <div class="map-section" id="mapSection">
           <div class="panel-header">
             <div class="panel-header-left">
-              <span class="panel-title">${SITE_VARIANT === 'tech' ? 'Global Tech' : 'Global Situation'}</span>
+              <span class="panel-title">${SITE_VARIANT === 'tech' ? 'Global Tech' : SITE_VARIANT === 'crypto' ? 'Crypto Markets' : 'Global Situation'}</span>
             </div>
             <button class="map-pin-btn" id="mapPinBtn" title="Pin map to top">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1303,20 +1319,26 @@ export class App {
   private createPanels(): void {
     const panelsGrid = document.getElementById('panelsGrid')!;
 
-    // Initialize map in the map section
-    // Default to MENA view on mobile for better focus
-    // Uses deck.gl (WebGL) on desktop, falls back to D3/SVG on mobile
-    const mapContainer = document.getElementById('mapContainer') as HTMLElement;
-    this.map = new MapContainer(mapContainer, {
-      zoom: this.isMobile ? 2.5 : 1.0,
-      pan: { x: 0, y: 0 },  // Centered view to show full world
-      view: this.isMobile ? 'mena' : 'global',
-      layers: this.mapLayers,
-      timeRange: '7d',
-    });
+    // Initialize map in the map section (skip for crypto variant - no map)
+    if (SITE_VARIANT !== 'crypto') {
+      // Default to MENA view on mobile for better focus
+      // Uses deck.gl (WebGL) on desktop, falls back to D3/SVG on mobile
+      const mapContainer = document.getElementById('mapContainer') as HTMLElement;
+      this.map = new MapContainer(mapContainer, {
+        zoom: this.isMobile ? 2.5 : 1.0,
+        pan: { x: 0, y: 0 },  // Centered view to show full world
+        view: this.isMobile ? 'mena' : 'global',
+        layers: this.mapLayers,
+        timeRange: '7d',
+      });
 
-    // Initialize escalation service with data getters
-    this.map.initEscalationGetters();
+      // Initialize escalation service with data getters
+      this.map.initEscalationGetters();
+    } else {
+      // Hide map section for crypto variant
+      const mapSection = document.getElementById('mapSection');
+      if (mapSection) mapSection.style.display = 'none';
+    }
 
     // Create all panels
     const politicsPanel = new NewsPanel('politics', 'World / Geopolitical');
@@ -1366,6 +1388,54 @@ export class App {
 
     const cryptoPanel = new CryptoPanel();
     this.panels['crypto'] = cryptoPanel;
+
+    // Crypto variant panels
+    if (SITE_VARIANT === 'crypto') {
+      const stablecoinPanel = new StablecoinPanel();
+      this.panels['stablecoins'] = stablecoinPanel;
+
+      const cryptoHeatmapPanel = new CryptoHeatmapPanel();
+      this.panels['crypto-heatmap'] = cryptoHeatmapPanel;
+
+      const macroSignalsPanel = new MacroSignalsPanel();
+      this.panels['macro-signals'] = macroSignalsPanel;
+
+      // Crypto-specific news panels
+      const bitcoinPanel = new NewsPanel('bitcoin', 'Bitcoin');
+      this.attachRelatedAssetHandlers(bitcoinPanel);
+      this.newsPanels['bitcoin'] = bitcoinPanel;
+      this.panels['bitcoin'] = bitcoinPanel;
+
+      const ethereumPanel = new NewsPanel('ethereum', 'Ethereum');
+      this.attachRelatedAssetHandlers(ethereumPanel);
+      this.newsPanels['ethereum'] = ethereumPanel;
+      this.panels['ethereum'] = ethereumPanel;
+
+      const altcoinsPanel = new NewsPanel('altcoins', 'Altcoins');
+      this.attachRelatedAssetHandlers(altcoinsPanel);
+      this.newsPanels['altcoins'] = altcoinsPanel;
+      this.panels['altcoins'] = altcoinsPanel;
+
+      const defiPanel = new NewsPanel('defi', 'DeFi');
+      this.attachRelatedAssetHandlers(defiPanel);
+      this.newsPanels['defi'] = defiPanel;
+      this.panels['defi'] = defiPanel;
+
+      const nftPanel = new NewsPanel('nft', 'NFT & Digital Assets');
+      this.attachRelatedAssetHandlers(nftPanel);
+      this.newsPanels['nft'] = nftPanel;
+      this.panels['nft'] = nftPanel;
+
+      const cryptoRegulationPanel = new NewsPanel('regulation', 'Crypto Regulation');
+      this.attachRelatedAssetHandlers(cryptoRegulationPanel);
+      this.newsPanels['regulation'] = cryptoRegulationPanel;
+      this.panels['regulation'] = cryptoRegulationPanel;
+
+      const tradingPanel = new NewsPanel('trading', 'Trading & Analysis');
+      this.attachRelatedAssetHandlers(tradingPanel);
+      this.newsPanels['trading'] = tradingPanel;
+      this.panels['trading'] = tradingPanel;
+    }
 
     const middleeastPanel = new NewsPanel('middleeast', 'Middle East / MENA');
     this.attachRelatedAssetHandlers(middleeastPanel);
@@ -2131,27 +2201,33 @@ export class App {
       { name: 'news', task: runGuarded('news', () => this.loadNews()) },
       { name: 'markets', task: runGuarded('markets', () => this.loadMarkets()) },
       { name: 'predictions', task: runGuarded('predictions', () => this.loadPredictions()) },
-      { name: 'pizzint', task: runGuarded('pizzint', () => this.loadPizzInt()) },
-      { name: 'fred', task: runGuarded('fred', () => this.loadFredData()) },
-      { name: 'oil', task: runGuarded('oil', () => this.loadOilAnalytics()) },
-      { name: 'spending', task: runGuarded('spending', () => this.loadGovernmentSpending()) },
     ];
 
+    // Non-crypto tasks (pizzint, fred, oil, spending need map or are geopolitical)
+    if (SITE_VARIANT !== 'crypto') {
+      tasks.push(
+        { name: 'pizzint', task: runGuarded('pizzint', () => this.loadPizzInt()) },
+        { name: 'fred', task: runGuarded('fred', () => this.loadFredData()) },
+        { name: 'oil', task: runGuarded('oil', () => this.loadOilAnalytics()) },
+        { name: 'spending', task: runGuarded('spending', () => this.loadGovernmentSpending()) },
+      );
+    }
+
     // Load intelligence signals for CII calculation (protests, military, outages)
-    // Only for geopolitical variant - tech variant doesn't need CII/focal points
+    // Only for geopolitical variant - tech/crypto variants don't need CII/focal points
     if (SITE_VARIANT === 'full') {
       tasks.push({ name: 'intelligence', task: runGuarded('intelligence', () => this.loadIntelligenceSignals()) });
     }
 
-    // Conditionally load non-intelligence layers
+    // Conditionally load non-intelligence layers (skip for crypto - no map)
     // NOTE: outages, protests, military are handled by loadIntelligenceSignals() above
     // They update the map when layers are enabled, so no duplicate tasks needed here
     if (SITE_VARIANT === 'full') tasks.push({ name: 'firms', task: runGuarded('firms', () => this.loadFirmsData()) });
-    if (this.mapLayers.natural) tasks.push({ name: 'natural', task: runGuarded('natural', () => this.loadNatural()) });
-    if (this.mapLayers.weather) tasks.push({ name: 'weather', task: runGuarded('weather', () => this.loadWeatherAlerts()) });
-    if (this.mapLayers.ais) tasks.push({ name: 'ais', task: runGuarded('ais', () => this.loadAisSignals()) });
-    if (this.mapLayers.cables) tasks.push({ name: 'cables', task: runGuarded('cables', () => this.loadCableActivity()) });
-    if (this.mapLayers.flights) tasks.push({ name: 'flights', task: runGuarded('flights', () => this.loadFlightDelays()) });
+    if (SITE_VARIANT !== 'crypto' && this.mapLayers.natural) tasks.push({ name: 'natural', task: runGuarded('natural', () => this.loadNatural()) });
+    if (SITE_VARIANT !== 'crypto' && this.mapLayers.weather) tasks.push({ name: 'weather', task: runGuarded('weather', () => this.loadWeatherAlerts()) });
+    if (SITE_VARIANT !== 'crypto' && this.mapLayers.ais) tasks.push({ name: 'ais', task: runGuarded('ais', () => this.loadAisSignals()) });
+    if (SITE_VARIANT !== 'crypto' && this.mapLayers.cables) tasks.push({ name: 'cables', task: runGuarded('cables', () => this.loadCableActivity()) });
+    if (SITE_VARIANT !== 'crypto' && this.mapLayers.flights) tasks.push({ name: 'flights', task: runGuarded('flights', () => this.loadFlightDelays()) });
     if (this.mapLayers.techEvents || SITE_VARIANT === 'tech') tasks.push({ name: 'techEvents', task: runGuarded('techEvents', () => this.loadTechEvents()) });
 
     // Tech Readiness panel (tech variant only)
@@ -2533,6 +2609,32 @@ export class App {
       this.statusPanel?.updateApi('CoinGecko', { status: 'ok' });
     } catch {
       this.statusPanel?.updateApi('CoinGecko', { status: 'error' });
+    }
+
+    // Crypto variant: load stablecoins, crypto sectors, macro signals
+    if (SITE_VARIANT === 'crypto') {
+      try {
+        const stablecoins = await fetchStablecoins();
+        (this.panels['stablecoins'] as StablecoinPanel)?.renderStablecoins(stablecoins);
+      } catch (e) {
+        console.error('[App] Stablecoins load failed:', e);
+      }
+
+      try {
+        const sectors = await fetchCryptoSectors();
+        (this.panels['crypto-heatmap'] as CryptoHeatmapPanel)?.renderSectors(sectors);
+      } catch (e) {
+        console.error('[App] Crypto sectors load failed:', e);
+      }
+
+      try {
+        const macroData = await fetchMacroSignals();
+        if (macroData) {
+          (this.panels['macro-signals'] as MacroSignalsPanel)?.renderSignals(macroData);
+        }
+      } catch (e) {
+        console.error('[App] Macro signals load failed:', e);
+      }
     }
   }
 
@@ -3310,18 +3412,29 @@ export class App {
   }
 
   private setupRefreshIntervals(): void {
-    // Always refresh news, markets, predictions, pizzint
+    // Always refresh news, markets, predictions
     this.scheduleRefresh('news', () => this.loadNews(), REFRESH_INTERVALS.feeds);
     this.scheduleRefresh('markets', () => this.loadMarkets(), REFRESH_INTERVALS.markets);
     this.scheduleRefresh('predictions', () => this.loadPredictions(), REFRESH_INTERVALS.predictions);
-    this.scheduleRefresh('pizzint', () => this.loadPizzInt(), 10 * 60 * 1000);
 
-    // Only refresh layer data if layer is enabled
-    this.scheduleRefresh('natural', () => this.loadNatural(), 5 * 60 * 1000, () => this.mapLayers.natural);
-    this.scheduleRefresh('weather', () => this.loadWeatherAlerts(), 10 * 60 * 1000, () => this.mapLayers.weather);
-    this.scheduleRefresh('fred', () => this.loadFredData(), 30 * 60 * 1000);
-    this.scheduleRefresh('oil', () => this.loadOilAnalytics(), 30 * 60 * 1000);
-    this.scheduleRefresh('spending', () => this.loadGovernmentSpending(), 60 * 60 * 1000);
+    // Skip map/geopolitical refreshes for crypto variant
+    if (SITE_VARIANT !== 'crypto') {
+      this.scheduleRefresh('pizzint', () => this.loadPizzInt(), 10 * 60 * 1000);
+
+      // Only refresh layer data if layer is enabled
+      this.scheduleRefresh('natural', () => this.loadNatural(), 5 * 60 * 1000, () => this.mapLayers.natural);
+      this.scheduleRefresh('weather', () => this.loadWeatherAlerts(), 10 * 60 * 1000, () => this.mapLayers.weather);
+      this.scheduleRefresh('fred', () => this.loadFredData(), 30 * 60 * 1000);
+      this.scheduleRefresh('oil', () => this.loadOilAnalytics(), 30 * 60 * 1000);
+      this.scheduleRefresh('spending', () => this.loadGovernmentSpending(), 60 * 60 * 1000);
+
+      // Non-intelligence layer refreshes only
+      // NOTE: outages, protests, military are refreshed by intelligence schedule above
+      this.scheduleRefresh('firms', () => this.loadFirmsData(), 30 * 60 * 1000);
+      this.scheduleRefresh('ais', () => this.loadAisSignals(), REFRESH_INTERVALS.ais, () => this.mapLayers.ais);
+      this.scheduleRefresh('cables', () => this.loadCableActivity(), 30 * 60 * 1000, () => this.mapLayers.cables);
+      this.scheduleRefresh('flights', () => this.loadFlightDelays(), 10 * 60 * 1000, () => this.mapLayers.flights);
+    }
 
     // Refresh intelligence signals for CII (geopolitical variant only)
     // This handles outages, protests, military - updates map when layers enabled
@@ -3331,12 +3444,5 @@ export class App {
         return this.loadIntelligenceSignals();
       }, 5 * 60 * 1000);
     }
-
-    // Non-intelligence layer refreshes only
-    // NOTE: outages, protests, military are refreshed by intelligence schedule above
-    this.scheduleRefresh('firms', () => this.loadFirmsData(), 30 * 60 * 1000);
-    this.scheduleRefresh('ais', () => this.loadAisSignals(), REFRESH_INTERVALS.ais, () => this.mapLayers.ais);
-    this.scheduleRefresh('cables', () => this.loadCableActivity(), 30 * 60 * 1000, () => this.mapLayers.cables);
-    this.scheduleRefresh('flights', () => this.loadFlightDelays(), 10 * 60 * 1000, () => this.mapLayers.flights);
   }
 }

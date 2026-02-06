@@ -65,7 +65,15 @@ const TECH_LIVE_CHANNELS: LiveChannel[] = [
   { id: 'nasa', name: 'NASA TV', handle: '@NASA', fallbackVideoId: 'fO9e9jnhYK8', useFallbackOnly: true },
 ];
 
-const LIVE_CHANNELS = SITE_VARIANT === 'tech' ? TECH_LIVE_CHANNELS : FULL_LIVE_CHANNELS;
+// Crypto variant: crypto-focused live streams
+const CRYPTO_LIVE_CHANNELS: LiveChannel[] = [
+  { id: 'bloomberg', name: 'Bloomberg', handle: '@Bloomberg', fallbackVideoId: 'iEpJwprxDdk' },
+  { id: 'cnbc', name: 'CNBC', handle: '@CNBC', fallbackVideoId: '9NyxcX3rhQs' },
+  { id: 'coinbureau', name: 'Coin Bureau', handle: '@CoinBureau', fallbackVideoId: '', useFallbackOnly: true },
+  { id: 'yahoo', name: 'Yahoo Finance', handle: '@YahooFinance', fallbackVideoId: 'KQp-e_XQnDE' },
+];
+
+const LIVE_CHANNELS = SITE_VARIANT === 'tech' ? TECH_LIVE_CHANNELS : SITE_VARIANT === 'crypto' ? CRYPTO_LIVE_CHANNELS : FULL_LIVE_CHANNELS;
 
 // Cache for live video IDs
 const liveVideoCache = new Map<string, { videoId: string | null; timestamp: number }>();

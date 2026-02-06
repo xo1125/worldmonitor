@@ -9,6 +9,8 @@
     "build": "tsc && vite build",
     "build:full": "VITE_VARIANT=full tsc && VITE_VARIANT=full vite build",
     "build:tech": "VITE_VARIANT=tech tsc && VITE_VARIANT=tech vite build",
+    "dev:crypto": "VITE_VARIANT=crypto vite",
+    "build:crypto": "VITE_VARIANT=crypto tsc && VITE_VARIANT=crypto vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },

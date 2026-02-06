@@ -1,7 +1,7 @@
 export const config = { runtime: 'edge' };
 
 const ALLOWED_CURRENCIES = ['usd', 'eur', 'gbp', 'jpy', 'cny', 'btc', 'eth'];
-const MAX_COIN_IDS = 20;
+const MAX_COIN_IDS = 50;
 const COIN_ID_PATTERN = /^[a-z0-9-]+$/;
 
 // Simple in-memory cache for edge function (reset on cold start)
@@ -35,9 +35,11 @@ export default async function handler(req) {
   const ids = validateCoinIds(url.searchParams.get('ids'));
   const vsCurrencies = validateCurrency(url.searchParams.get('vs_currencies'));
   const include24hrChange = validateBoolean(url.searchParams.get('include_24hr_change'), 'true');
+  const includeMarketCap = validateBoolean(url.searchParams.get('include_market_cap'), 'false');
+  const include24hrVol = validateBoolean(url.searchParams.get('include_24hr_vol'), 'false');
 
   // Return cached data if fresh
-  const cacheKey = `${ids}:${vsCurrencies}:${include24hrChange}`;
+  const cacheKey = `${ids}:${vsCurrencies}:${include24hrChange}:${includeMarketCap}:${include24hrVol}`;
   if (cache.data && cache.key === cacheKey && Date.now() - cache.timestamp < CACHE_TTL) {
     return new Response(cache.data, {
       status: 200,
@@ -51,7 +53,7 @@ export default async function handler(req) {
   }
 
   try {
-    const geckoUrl = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=${vsCurrencies}&include_24hr_change=${include24hrChange}`;
+    const geckoUrl = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=${vsCurrencies}&include_24hr_change=${include24hrChange}&include_market_cap=${includeMarketCap}&include_24hr_vol=${include24hrVol}`;
     const response = await fetch(geckoUrl, {
       headers: {
         'Accept': 'application/json',

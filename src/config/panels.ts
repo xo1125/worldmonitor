@@ -196,11 +196,20 @@ const TECH_MOBILE_MAP_LAYERS: MapLayers = {
 };
 
 // ============================================
+// CRYPTO VARIANT
+// ============================================
+import {
+  DEFAULT_PANELS as CRYPTO_PANELS,
+  DEFAULT_MAP_LAYERS as CRYPTO_MAP_LAYERS,
+  MOBILE_DEFAULT_MAP_LAYERS as CRYPTO_MOBILE_MAP_LAYERS,
+} from './variants/crypto';
+
+// ============================================
 // VARIANT-AWARE EXPORTS
 // ============================================
-export const DEFAULT_PANELS = SITE_VARIANT === 'tech' ? TECH_PANELS : FULL_PANELS;
-export const DEFAULT_MAP_LAYERS = SITE_VARIANT === 'tech' ? TECH_MAP_LAYERS : FULL_MAP_LAYERS;
-export const MOBILE_DEFAULT_MAP_LAYERS = SITE_VARIANT === 'tech' ? TECH_MOBILE_MAP_LAYERS : FULL_MOBILE_MAP_LAYERS;
+export const DEFAULT_PANELS = SITE_VARIANT === 'tech' ? TECH_PANELS : SITE_VARIANT === 'crypto' ? CRYPTO_PANELS : FULL_PANELS;
+export const DEFAULT_MAP_LAYERS = SITE_VARIANT === 'tech' ? TECH_MAP_LAYERS : SITE_VARIANT === 'crypto' ? CRYPTO_MAP_LAYERS : FULL_MAP_LAYERS;
+export const MOBILE_DEFAULT_MAP_LAYERS = SITE_VARIANT === 'tech' ? TECH_MOBILE_MAP_LAYERS : SITE_VARIANT === 'crypto' ? CRYPTO_MOBILE_MAP_LAYERS : FULL_MOBILE_MAP_LAYERS;
 
 export const MONITOR_COLORS = [
   '#44ff88',

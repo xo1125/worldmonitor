@@ -1,5 +1,5 @@
-import type { MarketData, CryptoData } from '@/types';
-import { API_URLS, CRYPTO_MAP } from '@/config';
+import type { MarketData, CryptoData, StablecoinData, CryptoSectorData, MacroSignalResult } from '@/types';
+import { API_URLS, CRYPTO_MAP, CRYPTO_IDS, STABLECOIN_MAP, CRYPTO_SECTORS } from '@/config';
 import { fetchWithProxy } from '@/utils';
 
 interface FinnhubQuote {
@@ -165,7 +165,10 @@ export async function fetchStockQuote(
 
 export async function fetchCrypto(): Promise<CryptoData[]> {
   try {
-    const response = await fetchWithProxy(API_URLS.coingecko);
+    // Build URL dynamically from CRYPTO_IDS (variant-aware)
+    const ids = CRYPTO_IDS.join(',');
+    const url = `/api/coingecko?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
+    const response = await fetchWithProxy(url);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data: CoinGeckoResponse = await response.json();
 
@@ -181,5 +184,92 @@ export async function fetchCrypto(): Promise<CryptoData[]> {
   } catch (e) {
     console.error('Failed to fetch crypto:', e);
     return [];
+  }
+}
+
+// Extended CoinGecko response with market cap and volume
+interface CoinGeckoExtendedResponse {
+  [key: string]: {
+    usd: number;
+    usd_24h_change: number;
+    usd_market_cap?: number;
+    usd_24h_vol?: number;
+  };
+}
+
+export async function fetchStablecoins(): Promise<StablecoinData[]> {
+  try {
+    const ids = Object.keys(STABLECOIN_MAP).join(',');
+    const url = `/api/coingecko?ids=${ids}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`;
+    const response = await fetchWithProxy(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data: CoinGeckoExtendedResponse = await response.json();
+
+    return Object.entries(STABLECOIN_MAP).map(([id, info]) => {
+      const coinData = data[id];
+      return {
+        name: info.name,
+        symbol: info.symbol,
+        price: coinData?.usd ?? 1.0,
+        change: coinData?.usd_24h_change ?? 0,
+        marketCap: coinData?.usd_market_cap ?? 0,
+        volume24h: coinData?.usd_24h_vol ?? 0,
+      };
+    });
+  } catch (e) {
+    console.error('Failed to fetch stablecoins:', e);
+    return [];
+  }
+}
+
+export async function fetchCryptoSectors(): Promise<CryptoSectorData[]> {
+  try {
+    // Collect all unique coin IDs from sectors
+    const allIds = new Set<string>();
+    CRYPTO_SECTORS.forEach(sector => sector.coins.forEach(id => allIds.add(id)));
+    const ids = Array.from(allIds).join(',');
+
+    const url = `/api/coingecko?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
+    const response = await fetchWithProxy(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data: CoinGeckoResponse = await response.json();
+
+    return CRYPTO_SECTORS.map(sector => {
+      const coins = sector.coins
+        .filter(id => data[id])
+        .map(id => ({
+          name: id,
+          symbol: id,
+          change: data[id]?.usd_24h_change ?? 0,
+        }));
+
+      const avgChange = coins.length > 0
+        ? coins.reduce((sum, c) => sum + c.change, 0) / coins.length
+        : 0;
+
+      return {
+        name: sector.name,
+        change: avgChange,
+        coins,
+      };
+    });
+  } catch (e) {
+    console.error('Failed to fetch crypto sectors:', e);
+    return [];
+  }
+}
+
+export async function fetchMacroSignals(): Promise<MacroSignalResult | null> {
+  try {
+    const response = await fetchWithProxy('/api/macro-signals');
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    return {
+      ...data,
+      lastUpdated: new Date(data.lastUpdated),
+    };
+  } catch (e) {
+    console.error('Failed to fetch macro signals:', e);
+    return null;
   }
 }

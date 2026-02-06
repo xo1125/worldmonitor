@@ -38,6 +38,15 @@ const WORLD_APIS = new Set([
   'AISStream', 'GDELT Doc', 'EIA', 'USASpending', 'PizzINT', 'FIRMS'
 ]);
 
+const CRYPTO_FEEDS = new Set([
+  'Bitcoin', 'Ethereum', 'Altcoins', 'Defi', 'Nft',
+  'Regulation', 'Trading', 'Finance', 'Crypto',
+  'Polymarket', 'Markets'
+]);
+const CRYPTO_APIS = new Set([
+  'RSS Proxy', 'CoinGecko', 'Polymarket', 'Macro Signals'
+]);
+
 export class StatusPanel {
   private element: HTMLElement;
   private isOpen = false;
@@ -48,8 +57,8 @@ export class StatusPanel {
 
   constructor() {
     // Set allowlists based on variant
-    this.allowedFeeds = SITE_VARIANT === 'tech' ? TECH_FEEDS : WORLD_FEEDS;
-    this.allowedApis = SITE_VARIANT === 'tech' ? TECH_APIS : WORLD_APIS;
+    this.allowedFeeds = SITE_VARIANT === 'tech' ? TECH_FEEDS : SITE_VARIANT === 'crypto' ? CRYPTO_FEEDS : WORLD_FEEDS;
+    this.allowedApis = SITE_VARIANT === 'tech' ? TECH_APIS : SITE_VARIANT === 'crypto' ? CRYPTO_APIS : WORLD_APIS;
 
     this.element = document.createElement('div');
     this.element.className = 'status-panel-container';

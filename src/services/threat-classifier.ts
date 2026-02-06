@@ -191,6 +191,43 @@ const TECH_LOW_KEYWORDS: KeywordMap = {
   'open source': 'tech',
 };
 
+// Crypto variant keywords
+const CRYPTO_HIGH_KEYWORDS: KeywordMap = {
+  'exchange hack': 'cyber',
+  'rug pull': 'economic',
+  'exploit': 'cyber',
+  'bridge hack': 'cyber',
+  'flash crash': 'economic',
+  'sec lawsuit': 'economic',
+  'bank run': 'economic',
+  'depeg': 'economic',
+  'insolvency': 'economic',
+};
+
+const CRYPTO_MEDIUM_KEYWORDS: KeywordMap = {
+  'hack': 'cyber',
+  'vulnerability': 'cyber',
+  'sec': 'economic',
+  'regulation': 'economic',
+  'ban crypto': 'economic',
+  'liquidation': 'economic',
+  'whale dump': 'economic',
+  'stablecoin': 'economic',
+};
+
+const CRYPTO_LOW_KEYWORDS: KeywordMap = {
+  'halving': 'economic',
+  'etf': 'economic',
+  'defi': 'tech',
+  'nft': 'tech',
+  'airdrop': 'economic',
+  'fork': 'tech',
+  'upgrade': 'tech',
+  'token launch': 'economic',
+  'listing': 'economic',
+  'partnership': 'economic',
+};
+
 const EXCLUSIONS = [
   'protein', 'couples', 'relationship', 'dating', 'diet', 'fitness',
   'recipe', 'cooking', 'shopping', 'fashion', 'celebrity', 'movie',
@@ -236,6 +273,7 @@ export function classifyByKeyword(title: string, variant = 'full'): ThreatClassi
   }
 
   const isTech = variant === 'tech';
+  const isCrypto = variant === 'crypto';
 
   // Priority cascade: critical → high → medium → low → info
   let match = matchKeywords(lower, CRITICAL_KEYWORDS);
@@ -249,6 +287,11 @@ export function classifyByKeyword(title: string, variant = 'full'): ThreatClassi
     if (match) return { level: 'high', category: match.category, confidence: 0.75, source: 'keyword' };
   }
 
+  if (isCrypto) {
+    match = matchKeywords(lower, CRYPTO_HIGH_KEYWORDS);
+    if (match) return { level: 'high', category: match.category, confidence: 0.75, source: 'keyword' };
+  }
+
   match = matchKeywords(lower, MEDIUM_KEYWORDS);
   if (match) return { level: 'medium', category: match.category, confidence: 0.7, source: 'keyword' };
 
@@ -257,11 +300,21 @@ export function classifyByKeyword(title: string, variant = 'full'): ThreatClassi
     if (match) return { level: 'medium', category: match.category, confidence: 0.65, source: 'keyword' };
   }
 
+  if (isCrypto) {
+    match = matchKeywords(lower, CRYPTO_MEDIUM_KEYWORDS);
+    if (match) return { level: 'medium', category: match.category, confidence: 0.65, source: 'keyword' };
+  }
+
   match = matchKeywords(lower, LOW_KEYWORDS);
   if (match) return { level: 'low', category: match.category, confidence: 0.6, source: 'keyword' };
 
   if (isTech) {
     match = matchKeywords(lower, TECH_LOW_KEYWORDS);
+    if (match) return { level: 'low', category: match.category, confidence: 0.55, source: 'keyword' };
+  }
+
+  if (isCrypto) {
+    match = matchKeywords(lower, CRYPTO_LOW_KEYWORDS);
     if (match) return { level: 'low', category: match.category, confidence: 0.55, source: 'keyword' };
   }
 

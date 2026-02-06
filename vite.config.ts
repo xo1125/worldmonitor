@@ -31,6 +31,26 @@ const VARIANT_META: Record<string, {
       'Geopolitical intelligence',
     ],
   },
+  crypto: {
+    title: 'Crypto Monitor - Real-Time Cryptocurrency Dashboard',
+    description: 'Real-time cryptocurrency dashboard tracking Bitcoin, Ethereum, DeFi, NFTs, market data, regulation, and blockchain news worldwide.',
+    keywords: 'crypto dashboard, Bitcoin, Ethereum, cryptocurrency, DeFi, NFT, blockchain, crypto markets, crypto news, altcoins, crypto regulation, trading, market analysis, stablecoins, crypto prices, Solana, Bittensor',
+    url: 'https://crypto.worldmonitor.app/',
+    siteName: 'Crypto Monitor',
+    features: [
+      'Real-time crypto price tracking',
+      'Cryptocurrency news aggregation',
+      'DeFi protocol monitoring',
+      'NFT market tracking',
+      'Crypto regulation updates',
+      'Bitcoin & Ethereum analysis',
+      'Altcoin coverage',
+      'Stablecoin peg monitoring',
+      'Crypto sector heatmap',
+      'Macro signal dashboard',
+      'Crypto prediction markets',
+    ],
+  },
   tech: {
     title: 'Tech Monitor - Real-Time AI & Tech Industry Dashboard',
     description: 'Real-time AI and tech industry dashboard tracking tech giants, AI labs, startup ecosystems, funding rounds, and tech events worldwide.',
@@ -149,11 +169,36 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/yahoo/, ''),
       },
-      // CoinGecko API
+      // CoinGecko API - rewrite to /api/v3/simple/price with query params
       '/api/coingecko': {
         target: 'https://api.coingecko.com',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/coingecko/, ''),
+        rewrite: (path) => {
+          const url = new URL(path, 'http://localhost');
+          const params = url.searchParams.toString();
+          return `/api/v3/simple/price${params ? '?' + params : ''}`;
+        },
+      },
+      // Macro Signals - mock in dev (edge function computes from Yahoo Finance)
+      '/api/macro-signals': {
+        target: 'http://localhost:3000',
+        selfHandleResponse: true,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (_proxyReq, _req, res) => {
+            const mockData = JSON.stringify({
+              verdict: 'CASH',
+              signals: [
+                { name: 'Liquidity', label: 'NORMAL', status: 'neutral', value: 'Dev mode', detail: 'Deploy to Vercel for live signals' },
+                { name: 'Flow Structure', label: 'ALIGNED', status: 'neutral', value: 'Dev mode', detail: 'Deploy to Vercel for live signals' },
+                { name: 'Macro Regime', label: 'RISK-ON', status: 'neutral', value: 'Dev mode', detail: 'Deploy to Vercel for live signals' },
+                { name: 'Technical Trend', label: 'NEUTRAL', status: 'neutral', value: 'Dev mode', detail: 'Deploy to Vercel for live signals' },
+              ],
+              lastUpdated: new Date().toISOString(),
+            });
+            res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+            res.end(mockData);
+          });
+        },
       },
       // Polymarket API
       '/api/polymarket': {

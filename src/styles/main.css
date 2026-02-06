@@ -151,6 +151,15 @@ body.animations-paused *::after {
   filter: grayscale(0%) drop-shadow(0 0 4px #4a9eff);
 }
 
+.variant-option[data-variant="crypto"].active {
+  color: #f7931a;
+  background: rgba(247, 147, 26, 0.1);
+}
+
+.variant-option[data-variant="crypto"].active .variant-icon {
+  filter: grayscale(0%) drop-shadow(0 0 4px #f7931a);
+}
+
 .variant-divider {
   width: 1px;
   height: 12px;
@@ -11227,3 +11236,158 @@ body.has-critical-banner .panels-grid {
   color: rgba(255, 100, 100, 0.7);
   font-size: 13px;
 }
+
+/* ============================================
+   CRYPTO VARIANT - Stablecoin Panel
+   ============================================ */
+.stablecoin-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 8px;
+}
+
+.stablecoin-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  text-align: center;
+}
+
+.stablecoin-symbol {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.stablecoin-price {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.stablecoin-mcap {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.peg-status {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.peg-stable { background: rgba(68, 255, 136, 0.15); color: #44ff88; }
+.peg-warning { background: rgba(255, 200, 50, 0.15); color: #ffc832; }
+.peg-danger { background: rgba(255, 68, 68, 0.15); color: #ff4444; }
+
+/* ============================================
+   CRYPTO VARIANT - Crypto Heatmap Panel
+   ============================================ */
+.crypto-heatmap {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 4px;
+}
+
+.crypto-sector-cell {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 8px;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+
+.crypto-sector-cell:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.crypto-sector-name {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.crypto-sector-change {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.crypto-sector-cell.sector-up { background: rgba(68, 255, 136, 0.08); border-color: rgba(68, 255, 136, 0.2); }
+.crypto-sector-cell.sector-down { background: rgba(255, 68, 68, 0.08); border-color: rgba(255, 68, 68, 0.2); }
+
+/* ============================================
+   CRYPTO VARIANT - Macro Signals Panel
+   ============================================ */
+.macro-signals-container {
+  padding: 8px;
+}
+
+.macro-verdict {
+  text-align: center;
+  padding: 12px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.macro-verdict.verdict-buy {
+  background: rgba(68, 255, 136, 0.12);
+  color: #44ff88;
+  border: 1px solid rgba(68, 255, 136, 0.3);
+}
+
+.macro-verdict.verdict-cash {
+  background: rgba(255, 68, 68, 0.12);
+  color: #ff4444;
+  border: 1px solid rgba(255, 68, 68, 0.3);
+}
+
+.macro-signals-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.macro-signal-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.macro-signal-name {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+.macro-signal-status {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.macro-signal-value {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.signal-bullish { color: #44ff88; }
+.signal-bearish { color: #ff4444; }
+.signal-neutral { color: #ffc832; }

@@ -67,14 +67,7 @@ const CRYPTO_MAP_EXTENDED: Record<string, { name: string; symbol: string }> = {
   ...CRYPTO_MAP_BASE,
   bittensor: { name: 'Bittensor', symbol: 'TAO' },
   'aerodrome-finance': { name: 'Aerodrome', symbol: 'AERO' },
-  ripple: { name: 'XRP', symbol: 'XRP' },
-  cardano: { name: 'Cardano', symbol: 'ADA' },
-  dogecoin: { name: 'Dogecoin', symbol: 'DOGE' },
-  'avalanche-2': { name: 'Avalanche', symbol: 'AVAX' },
-  polkadot: { name: 'Polkadot', symbol: 'DOT' },
-  chainlink: { name: 'Chainlink', symbol: 'LINK' },
-  uniswap: { name: 'Uniswap', symbol: 'UNI' },
-  litecoin: { name: 'Litecoin', symbol: 'LTC' },
+  zama: { name: 'Zama', symbol: 'ZAMA' },
 };
 
 export const CRYPTO_MAP = SITE_VARIANT === 'crypto' ? CRYPTO_MAP_EXTENDED : CRYPTO_MAP_BASE;

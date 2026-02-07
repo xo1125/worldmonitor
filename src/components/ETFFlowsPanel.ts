@@ -58,8 +58,10 @@ export class ETFFlowsPanel extends Panel {
         const chgStr = etf.change != null ? `${etf.change >= 0 ? '+' : ''}${etf.change.toFixed(2)}%` : '--';
         // Estimate flow per ETF: volume * price * direction (sign of change)
         const dollarVol = (etf.volume ?? 0) * (etf.price ?? 0);
-        const direction = (etf.change ?? 0) >= 0 ? 1 : -1;
-        const estFlow = dollarVol * 0.1 * direction; // ~10% of volume as estimated net flow
+        const changePct = etf.change ?? 0;
+        const direction = changePct >= 0 ? 1 : -1;
+        const weight = Math.min(Math.abs(changePct) / 100, 0.5); // cap at 50%
+        const estFlow = dollarVol * Math.max(weight, 0.02) * direction; // min 2% weight
         const flowStr = dollarVol > 0 ? this.formatFlow(estFlow) : '--';
         const etfFlowClass = estFlow >= 0 ? 'etf-positive' : 'etf-negative';
         const volStr = dollarVol > 0 ? this.formatVolume(dollarVol) : '--';

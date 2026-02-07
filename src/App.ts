@@ -64,6 +64,8 @@ import {
   TechReadinessPanel,
   StablecoinPanel,
   StablecoinSupplyPanel,
+  BTCMonitorPanel,
+  ReportingPanel,
   CryptoHeatmapPanel,
   SignalCardPanel,
   WatchlistPanel,
@@ -1405,6 +1407,12 @@ export class App {
       const stablecoinSupplyPanel = new StablecoinSupplyPanel();
       this.panels['stablecoin-supply'] = stablecoinSupplyPanel;
 
+      const btcMonitorPanel = new BTCMonitorPanel();
+      this.panels['btc-monitor'] = btcMonitorPanel;
+
+      const reportingPanel = new ReportingPanel();
+      this.panels['reporting'] = reportingPanel;
+
       // Crypto-specific news panels (trimmed to 3: trading, finance, regulation)
       const cryptoRegulationPanel = new NewsPanel('regulation', 'Crypto Regulation');
       this.newsPanels['regulation'] = cryptoRegulationPanel;
@@ -2608,6 +2616,26 @@ export class App {
       }
 
       try {
+        const btcLevelsRes = await fetch('/api/btc-levels');
+        if (btcLevelsRes.ok) {
+          const btcLevelsData = await btcLevelsRes.json();
+          (this.panels['btc-monitor'] as BTCMonitorPanel)?.renderLevels(btcLevelsData);
+        }
+      } catch (e) {
+        console.error('[App] BTC levels load failed:', e);
+      }
+
+      try {
+        const reportRes = await fetch('/api/crypto-report');
+        if (reportRes.ok) {
+          const reportData = await reportRes.json();
+          (this.panels['reporting'] as ReportingPanel)?.renderReport(reportData);
+        }
+      } catch (e) {
+        console.error('[App] Crypto report load failed:', e);
+      }
+
+      try {
         const sectors = await fetchCryptoSectors();
         (this.panels['crypto-heatmap'] as CryptoHeatmapPanel)?.renderSectors(sectors);
       } catch (e) {
@@ -3494,6 +3522,18 @@ export class App {
           console.error('[App] ETF flows refresh failed:', e);
         }
       }, 900000); // 15 min
+
+      this.scheduleRefresh('btc-monitor', async () => {
+        try {
+          const res = await fetch('/api/btc-levels');
+          if (res.ok) {
+            const data = await res.json();
+            (this.panels['btc-monitor'] as BTCMonitorPanel)?.renderLevels(data);
+          }
+        } catch (e) {
+          console.error('[App] BTC levels refresh failed:', e);
+        }
+      }, 300000); // 5 min
     }
 
     // Refresh intelligence signals for CII (geopolitical variant only)

@@ -299,6 +299,9 @@ export async function fetchWatchlist(): Promise<WatchlistData[]> {
         change: coinData?.usd_24h_change ?? 0,
         marketCap: coinData?.usd_market_cap ?? undefined,
         volume: coinData?.usd_24h_vol ?? undefined,
+        conviction: info.conviction,
+        sector: info.sector,
+        tag: info.tag,
       };
     });
   } catch (e) {
@@ -368,6 +371,40 @@ export async function fetchETFFlows(): Promise<ETFFlowsResult | null> {
     return await response.json();
   } catch (e) {
     console.error('Failed to fetch ETF flows:', e);
+    return null;
+  }
+}
+
+export interface BTCLevel {
+  value: number;
+  source: 'api' | 'fallback' | 'computed' | 'derived';
+  label: string;
+  tag: string;
+}
+
+export interface BTCLevelsResult {
+  price: number;
+  levels: {
+    sth_rp: BTCLevel;
+    true_mean: BTCLevel;
+    wma_200: BTCLevel;
+    realized: BTCLevel;
+  };
+  regime: 'BULL' | 'DEFENSIVE' | 'BEAR' | 'FLOOR_TEST';
+  risk_score: number;
+  retest_proximity: number;
+  dead_cat_warning: boolean;
+  price_history_30d: number[];
+  lastUpdated: string;
+}
+
+export async function fetchBTCLevels(): Promise<BTCLevelsResult | null> {
+  try {
+    const response = await fetchWithProxy('/api/btc-levels');
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  } catch (e) {
+    console.error('Failed to fetch BTC levels:', e);
     return null;
   }
 }

@@ -66,7 +66,7 @@ async function fetchBTCHashRate() {
 
 async function fetchYahooQuote(symbol) {
   try {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=60d&interval=1d`;
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=250d&interval=1d`;
     const response = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0' },
     });
@@ -215,6 +215,8 @@ function computeSignals(quotes, hashRateData, fearGreedData) {
       supportingData: {
         'BTC': `$${price?.toLocaleString()}`,
         'SMA50': `$${Math.round(sma50).toLocaleString()}`,
+        'SMA200': `$${Math.round(calcSMA(btc.closes, 200)).toLocaleString()}`,
+        'Mayer': calcSMA(btc.closes, 200) > 0 ? (price / calcSMA(btc.closes, 200)).toFixed(2) : 'N/A',
         'VWAP': `$${Math.round(vwap).toLocaleString()}`,
       },
     });

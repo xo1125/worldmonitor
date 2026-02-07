@@ -11554,7 +11554,7 @@ body.has-critical-banner .panels-grid {
 }
 
 /* ============================================
-   WATCHLIST PANEL — Compact Token Table
+   WATCHLIST PANEL — Two-Tier Conviction Table
    ============================================ */
 .watchlist-container {
   padding: 4px 8px;
@@ -11562,7 +11562,7 @@ body.has-critical-banner .panels-grid {
 
 .watchlist-header-row {
   display: grid;
-  grid-template-columns: 50px 1fr 80px 65px 65px 55px;
+  grid-template-columns: 55px 75px 60px 55px 1fr;
   gap: 4px;
   padding: 4px 0;
   border-bottom: 1px solid var(--border);
@@ -11573,11 +11573,31 @@ body.has-critical-banner .panels-grid {
   color: var(--text-dim);
 }
 
+.wl-sort {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s;
+}
+
+.wl-sort:hover {
+  color: var(--text);
+}
+
+.watchlist-section-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-dim);
+  padding: 8px 0 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
 .watchlist-row {
   display: grid;
-  grid-template-columns: 50px 1fr 80px 65px 65px 55px;
+  grid-template-columns: 55px 75px 60px 55px 1fr;
   gap: 4px;
-  padding: 6px 0;
+  padding: 5px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   align-items: center;
   transition: background 0.15s;
@@ -11592,26 +11612,20 @@ body.has-critical-banner .panels-grid {
 }
 
 .watchlist-symbol {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--text);
   font-family: 'JetBrains Mono', monospace;
 }
 
-.watchlist-name {
-  font-size: 10px;
-  color: var(--text-dim);
-}
-
 .watchlist-price {
-  font-size: 12px;
+  font-size: 11px;
   font-family: 'JetBrains Mono', monospace;
   color: var(--text);
   text-align: right;
 }
 
-.watchlist-mcap,
-.watchlist-vol {
+.watchlist-mcap {
   font-size: 10px;
   font-family: 'JetBrains Mono', monospace;
   color: var(--text-dim);
@@ -11619,7 +11633,7 @@ body.has-critical-banner .panels-grid {
 }
 
 .watchlist-change {
-  font-size: 11px;
+  font-size: 10px;
   font-family: 'JetBrains Mono', monospace;
   font-weight: 600;
   text-align: right;
@@ -11628,6 +11642,22 @@ body.has-critical-banner .panels-grid {
 .watchlist-change.change-up { color: #44ff88; }
 .watchlist-change.change-down { color: #ff4444; }
 .watchlist-change.change-flat { color: var(--text-dim); }
+
+.watchlist-sector {
+  text-align: right;
+}
+
+.sector-pill {
+  display: inline-block;
+  font-size: 8px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
 
 /* ============================================
    TAO SUBNETS PANEL — Compact Card Grid
@@ -12028,3 +12058,465 @@ body.has-critical-banner .panels-grid {
 
 .etf-change.etf-positive { color: #4ade80; }
 .etf-change.etf-negative { color: #f87171; }
+
+/* ── BTC Monitor Panel ── */
+.btc-monitor-container {
+  padding: 0;
+}
+
+/* Regime Banner */
+.btc-regime-banner {
+  padding: 16px 20px;
+  border-left: 3px solid;
+  margin: 0 0 2px;
+}
+
+.btc-regime-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.btc-regime-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.btc-regime-price {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: -0.5px;
+  margin-bottom: 4px;
+}
+
+.btc-regime-desc {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.4;
+}
+
+.btc-dead-cat-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: rgba(251, 146, 60, 0.25);
+  color: #fb923c;
+  border: 1px solid rgba(251, 146, 60, 0.4);
+  animation: btc-pulse 2s ease-in-out infinite;
+}
+
+/* Gauges Row */
+.btc-gauges-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 0;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.btc-gauge-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.btc-gauge-title,
+.btc-retest-title {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 8px;
+}
+
+.btc-risk-gauge {
+  width: 120px;
+  height: 68px;
+}
+
+/* Retest Bar */
+.btc-retest-section {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.btc-retest-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 6px;
+}
+
+.btc-retest-bar {
+  position: relative;
+  width: 100%;
+  height: 20px;
+}
+
+.btc-retest-track {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  top: 7px;
+}
+
+.btc-retest-trap {
+  position: absolute;
+  height: 100%;
+  background: rgba(248, 113, 113, 0.2);
+  border-radius: 0 3px 3px 0;
+}
+
+.btc-retest-mean-line {
+  position: absolute;
+  width: 1px;
+  height: 14px;
+  top: -4px;
+  background: #fbbf24;
+  opacity: 0.6;
+}
+
+.btc-retest-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #4ade80;
+  top: -2px;
+  transform: translateX(-50%);
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.4);
+  transition: left 0.6s ease;
+}
+
+.btc-retest-sublabels {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 6px;
+}
+
+/* Dead Cat Warning */
+.btc-dead-cat-warning {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(251, 146, 60, 0.1);
+  border-top: 1px solid rgba(251, 146, 60, 0.2);
+  border-bottom: 1px solid rgba(251, 146, 60, 0.2);
+  font-size: 11px;
+  color: #fb923c;
+  line-height: 1.4;
+}
+
+.btc-warning-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  border-radius: 50%;
+  background: rgba(251, 146, 60, 0.25);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Levels Table */
+.btc-levels-section {
+  padding: 8px 0;
+}
+
+.btc-levels-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.btc-levels-table th {
+  padding: 6px 16px;
+  text-align: left;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.35);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.btc-levels-table th:nth-child(2),
+.btc-levels-table th:nth-child(3),
+.btc-levels-table th:nth-child(4) {
+  text-align: right;
+}
+
+.btc-level-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.btc-level-row:last-child {
+  border-bottom: none;
+}
+
+.btc-level-name {
+  padding: 8px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.btc-level-label {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.btc-level-tag {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.35);
+  font-style: italic;
+}
+
+.btc-level-value {
+  padding: 8px 16px;
+  text-align: right;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.btc-level-dist {
+  padding: 8px 16px;
+  text-align: right;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+}
+
+.btc-level-above { color: #4ade80; }
+.btc-level-below { color: #f87171; }
+
+.btc-level-source {
+  padding: 8px 16px;
+  text-align: right;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.25);
+  font-style: italic;
+}
+
+/* Sparkline with Level Lines */
+.btc-sparkline-section {
+  padding: 8px 16px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.btc-level-sparkline {
+  width: 100%;
+  height: 60px;
+}
+
+.btc-sparkline-label {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.25);
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* Pulse animation for trap zone badge */
+@keyframes btc-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Responsive: stack gauges on narrow panels */
+@media (max-width: 480px) {
+  .btc-gauges-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .btc-regime-price {
+    font-size: 22px;
+  }
+}
+
+/* ── Opex Expiry Banner ── */
+.btc-opex-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin-bottom: 8px;
+  font-size: 10px;
+}
+
+.btc-opex-banner.btc-opex-urgent {
+  border-color: rgba(251, 191, 36, 0.5);
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.btc-opex-label {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+
+.btc-opex-urgent .btc-opex-label {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.15);
+}
+
+.btc-opex-date {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.btc-opex-countdown {
+  margin-left: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.btc-opex-urgent .btc-opex-countdown {
+  color: #fbbf24;
+}
+
+/* ── Reporting Panel ── */
+.rpt-container {
+  padding: 8px;
+}
+
+.rpt-movers-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.rpt-mover-section {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+
+.rpt-mover-title {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.rpt-mover-row {
+  display: grid;
+  grid-template-columns: 50px 1fr 65px;
+  gap: 4px;
+  padding: 3px 0;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.rpt-mover-row:last-child {
+  border-bottom: none;
+}
+
+.rpt-mover-symbol {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.rpt-mover-price {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-dim);
+  text-align: right;
+}
+
+.rpt-mover-change {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  text-align: right;
+}
+
+.rpt-up { color: #44ff88; }
+.rpt-down { color: #ff4444; }
+
+.rpt-section-title {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.rpt-mcap-section {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.rpt-mcap-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 30px;
+  gap: 8px;
+  align-items: center;
+  padding: 3px 0;
+}
+
+.rpt-mcap-label {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.rpt-mcap-bar-track {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.rpt-mcap-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.rpt-mcap-count {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+  text-align: right;
+}

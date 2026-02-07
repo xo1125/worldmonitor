@@ -143,6 +143,9 @@ export interface WatchlistData {
   change: number;
   marketCap?: number;
   volume?: number;
+  conviction: 'high' | 'low';
+  sector: string;
+  tag?: string;
 }
 
 // TAO Subnet data

@@ -36,3 +36,5 @@ export * from './SignalCardPanel';
 export * from './WatchlistPanel';
 export * from './TaoSubnetPanel';
 export * from './ETFFlowsPanel';
+export * from './BTCMonitorPanel';
+export * from './ReportingPanel';

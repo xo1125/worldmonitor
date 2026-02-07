@@ -99,14 +99,26 @@ export const CRYPTO_SECTORS: CryptoSector[] = [
 ];
 
 // Watchlist tokens (fund-specific, used by crypto variant)
-export const WATCHLIST_MAP: Record<string, { name: string; symbol: string }> = {
-  hyperliquid: { name: 'Hyperliquid', symbol: 'HYPE' },
-  litentry: { name: 'Litentry', symbol: 'LIT' },
-  sky: { name: 'Sky', symbol: 'SKY' },
-  'meta-2-2': { name: 'Meta', symbol: 'META' },
-  fogo: { name: 'Fogo', symbol: 'FOGO' },
-  canton: { name: 'Canton', symbol: 'CANTON' },
-  'jupiter-exchange-solana': { name: 'Jupiter', symbol: 'JUP' },
+export interface WatchlistTokenConfig {
+  name: string;
+  symbol: string;
+  conviction: 'high' | 'low';
+  sector: string;
+  tag?: string;
+}
+
+export const WATCHLIST_MAP: Record<string, WatchlistTokenConfig> = {
+  // High Conviction
+  brevis: { name: 'Brevis', symbol: 'BREV', conviction: 'high', sector: 'ZK/Infra' },
+  daydreams: { name: 'Daydreams', symbol: 'DREAMS', conviction: 'high', sector: 'AI/Agents' },
+  litentry: { name: 'Litentry', symbol: 'LIT', conviction: 'high', sector: 'Identity' },
+  hyperliquid: { name: 'Hyperliquid', symbol: 'HYPE', conviction: 'high', sector: 'DeFi/Perps' },
+  // Low Conviction
+  sky: { name: 'Sky', symbol: 'SKY', conviction: 'low', sector: 'DeFi' },
+  'meta-2-2': { name: 'Meta', symbol: 'META', conviction: 'low', sector: 'DeFi' },
+  fogo: { name: 'Fogo', symbol: 'FOGO', conviction: 'low', sector: 'L1' },
+  canton: { name: 'Canton', symbol: 'CANTON', conviction: 'low', sector: 'Enterprise' },
+  'jupiter-exchange-solana': { name: 'Jupiter', symbol: 'JUP', conviction: 'low', sector: 'DeFi/DEX' },
 };
 export const WATCHLIST_IDS = Object.keys(WATCHLIST_MAP);
 

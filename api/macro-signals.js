@@ -9,7 +9,8 @@ const TICKERS = ['JPY=X', 'BTC-USD', 'QQQ', 'XLP'];
 // Mining cost model constants
 const DAILY_BTC_MINED = 450; // post-halving: 3.125 BTC × 144 blocks
 const AVG_EFFICIENCY_J_PER_TH = 25; // modern ASIC (S21-class)
-const AVG_ELECTRICITY_USD_PER_KWH = 0.05;
+const AVG_ELECTRICITY_USD_PER_KWH = 0.06; // global average electricity rate
+const ALL_IN_MULTIPLIER = 1.5; // hardware amort, cooling, labor, facilities
 
 async function fetchFearGreedIndex() {
   try {
@@ -244,7 +245,7 @@ function computeSignals(quotes, hashRateData, fearGreedData) {
     if (btc) {
       const hashrateTH = currentEH * 1e6; // EH/s to TH/s
       const dailyEnergyCost = (hashrateTH * AVG_EFFICIENCY_J_PER_TH * 24) / 1000 * AVG_ELECTRICITY_USD_PER_KWH;
-      const costPerBTC = dailyEnergyCost / DAILY_BTC_MINED;
+      const costPerBTC = (dailyEnergyCost / DAILY_BTC_MINED) * ALL_IN_MULTIPLIER;
       const btcPrice = btc.price;
       const margin = btcPrice > 0 ? ((btcPrice - costPerBTC) / btcPrice) * 100 : 0;
       const hashprice = (btcPrice * DAILY_BTC_MINED) / hashrateTH; // USD/TH/day

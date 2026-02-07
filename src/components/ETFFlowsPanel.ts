@@ -56,14 +56,19 @@ export class ETFFlowsPanel extends Panel {
       .map((etf) => {
         const chgClass = (etf.change ?? 0) >= 0 ? 'etf-positive' : 'etf-negative';
         const chgStr = etf.change != null ? `${etf.change >= 0 ? '+' : ''}${etf.change.toFixed(2)}%` : '--';
-        const priceStr = etf.price != null ? `$${etf.price.toFixed(2)}` : '--';
-        const volStr = etf.volume != null ? this.formatVolume(etf.volume * (etf.price || 0)) : '--';
+        // Estimate flow per ETF: volume * price * direction (sign of change)
+        const dollarVol = (etf.volume ?? 0) * (etf.price ?? 0);
+        const direction = (etf.change ?? 0) >= 0 ? 1 : -1;
+        const estFlow = dollarVol * 0.1 * direction; // ~10% of volume as estimated net flow
+        const flowStr = dollarVol > 0 ? this.formatFlow(estFlow) : '--';
+        const etfFlowClass = estFlow >= 0 ? 'etf-positive' : 'etf-negative';
+        const volStr = dollarVol > 0 ? this.formatVolume(dollarVol) : '--';
 
         return `
           <tr class="etf-row">
             <td class="etf-ticker">${escapeHtml(etf.ticker)}</td>
             <td class="etf-issuer">${escapeHtml(etf.issuer)}</td>
-            <td class="etf-price">${priceStr}</td>
+            <td class="etf-flow ${etfFlowClass}">${flowStr}</td>
             <td class="etf-change ${chgClass}">${chgStr}</td>
             <td class="etf-vol">${volStr}</td>
           </tr>
@@ -92,7 +97,7 @@ export class ETFFlowsPanel extends Panel {
             <tr>
               <th>ETF</th>
               <th>Issuer</th>
-              <th>Price</th>
+              <th>Est. Flow</th>
               <th>24h</th>
               <th>Vol</th>
             </tr>

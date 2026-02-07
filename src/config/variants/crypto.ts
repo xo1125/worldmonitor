@@ -94,11 +94,11 @@ export const DEFAULT_PANELS: Record<string, PanelConfig> = {
   'signal-mining': { name: 'Mining Cost', enabled: true, priority: 1 },
   'signal-feargreed': { name: 'Fear & Greed', enabled: true, priority: 1 },
   commodities: { name: 'Commodities / VIX', enabled: true, priority: 1 },
-  watchlist: { name: 'Watchlist', enabled: true, priority: 1 },
+  'stablecoin-supply': { name: 'Stablecoin Supply', enabled: true, priority: 1 },
   'etf-flows': { name: 'BTC ETF Tracker', enabled: true, priority: 1 },
+  watchlist: { name: 'Watchlist', enabled: true, priority: 1 },
   crypto: { name: 'Crypto Prices', enabled: true, priority: 1 },
   'tao-subnets': { name: 'TAO Subnets', enabled: true, priority: 1 },
-  stablecoins: { name: 'Stablecoins', enabled: true, priority: 1 },
   'crypto-heatmap': { name: 'Crypto Sectors', enabled: true, priority: 1 },
   insights: { name: 'AI Crypto Insights', enabled: true, priority: 1 },
   'live-news': { name: 'Crypto Headlines', enabled: true, priority: 1 },
@@ -106,6 +106,7 @@ export const DEFAULT_PANELS: Record<string, PanelConfig> = {
   finance: { name: 'Crypto Finance', enabled: true, priority: 1 },
   regulation: { name: 'Crypto Regulation', enabled: true, priority: 1 },
   polymarket: { name: 'Crypto Predictions', enabled: true, priority: 2 },
+  stablecoins: { name: 'Stablecoins', enabled: true, priority: 2 },
   monitors: { name: 'My Monitors', enabled: true, priority: 2 },
 };
 

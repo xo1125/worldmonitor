@@ -12,7 +12,7 @@ export const config = {
 };
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'llama-3.1-8b-instant'; // 14.4K RPD vs 1K for 70b
+const MODEL = 'llama-3.3-70b-versatile'; // much better quality for crypto analysis
 const CACHE_TTL_SECONDS = 86400; // 24 hours
 
 // Initialize Redis (lazy - only if env vars present)

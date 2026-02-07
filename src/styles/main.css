@@ -3328,7 +3328,7 @@ body.playback-mode .status-dot {
 
 .commodity-item {
   background: var(--border);
-  padding: 8px;
+  padding: 6px 8px;
   border-radius: 2px;
 }
 
@@ -3336,10 +3336,17 @@ body.playback-mode .status-dot {
   font-size: 9px;
   color: var(--text-dim);
   text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.commodity-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
 }
 
 .commodity-price {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: bold;
   color: var(--text);
 }
@@ -11500,6 +11507,52 @@ body.has-critical-banner .panels-grid {
   border-left: 3px solid rgba(255, 200, 50, 0.5);
 }
 
+/* Clickable signal cards */
+.signal-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.signal-card-solo.signal-clickable {
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.signal-card-solo.signal-clickable:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.signal-link-icon {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-left: auto;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+
+.signal-card-solo.signal-clickable:hover .signal-link-icon {
+  opacity: 1;
+}
+
+.macro-signal-top {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Fear & Greed donut */
+.fg-donut-container {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+}
+
+.fg-donut {
+  width: 80px;
+  height: 80px;
+}
+
 /* ============================================
    WATCHLIST PANEL — Compact Token Table
    ============================================ */
@@ -11703,6 +11756,180 @@ body.has-critical-banner .panels-grid {
 .tao-price-change.change-up { color: #44ff88; }
 .tao-price-change.change-down { color: #ff4444; }
 .tao-price-change.change-flat { color: var(--text-dim); }
+
+/* TAO compact list */
+.tao-list {
+  padding: 4px 8px;
+}
+
+.tao-list-header {
+  display: grid;
+  grid-template-columns: 16px 1fr 60px 70px;
+  gap: 4px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+}
+
+.tao-row {
+  display: grid;
+  grid-template-columns: 16px 1fr 60px 70px;
+  gap: 4px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.tao-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.tao-row:last-child {
+  border-bottom: none;
+}
+
+.tao-row-dot {
+  font-size: 8px;
+  text-align: center;
+}
+
+.tao-row.subnet-active .tao-row-dot { color: #44ff88; }
+.tao-row.subnet-inactive .tao-row-dot { color: #ff4444; }
+.tao-row.subnet-unknown .tao-row-dot { color: var(--text-dim); }
+
+.tao-row-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tao-row-netuid {
+  font-size: 9px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-dim);
+  text-align: right;
+}
+
+.tao-row-emission {
+  font-size: 9px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-dim);
+  text-align: right;
+}
+
+/* ── Stablecoin Supply Panel ── */
+.supply-container {
+  padding: 8px;
+}
+
+.supply-total {
+  text-align: center;
+  padding: 12px;
+  background: var(--bg-card, #1a1a2e);
+  border-radius: 6px;
+  border: 1px solid var(--border-dim, #333);
+  margin-bottom: 10px;
+}
+
+.supply-total-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+.supply-total-value {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+}
+
+.supply-total-sub {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.supply-breakdown {
+  padding: 0 4px;
+}
+
+.supply-header-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 50px 70px;
+  gap: 4px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+}
+
+.supply-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 50px 70px;
+  gap: 4px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  align-items: center;
+}
+
+.supply-row:last-child {
+  border-bottom: none;
+}
+
+.supply-symbol {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.supply-mcap {
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+  text-align: right;
+}
+
+.supply-pct {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-dim);
+  text-align: right;
+}
+
+.supply-peg {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  text-align: right;
+}
+
+.supply-peg.peg-stable { color: #44ff88; }
+.supply-peg.peg-warning { color: #fbbf24; }
+.supply-peg.peg-danger { color: #ff4444; }
+
+/* ETF flow cell */
+.etf-flow {
+  text-align: right;
+  font-weight: 600;
+}
+
+.etf-flow.etf-positive { color: #4ade80; }
+.etf-flow.etf-negative { color: #f87171; }
 
 /* ── ETF Flows Panel ── */
 .etf-flows-container {

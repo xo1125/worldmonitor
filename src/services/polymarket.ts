@@ -157,9 +157,11 @@ export async function fetchPredictions(): Promise<PredictionMarket[]> {
       }
     }
 
-    // Sort by volume descending, then filter for meaningful signal
+    // Sort by volume descending, filter out resolved/near-resolved and weak signal
     return markets
       .filter(m => {
+        // Skip effectively resolved markets (yes at 0-2% or 98-100%)
+        if (m.yesPrice <= 2 || m.yesPrice >= 98) return false;
         const discrepancy = Math.abs(m.yesPrice - 50);
         return discrepancy > 5 || (m.volume && m.volume > 50000);
       })

@@ -86,8 +86,10 @@ export class CommoditiesPanel extends Panel {
           (c) => `
         <div class="commodity-item">
           <div class="commodity-name">${escapeHtml(c.display)}</div>
-          <div class="commodity-price">${formatPrice(c.price!)}</div>
-          <div class="commodity-change ${getChangeClass(c.change!)}">${formatChange(c.change!)}</div>
+          <div class="commodity-row">
+            <span class="commodity-price">${formatPrice(c.price!)}</span>
+            <span class="commodity-change ${getChangeClass(c.change!)}">${formatChange(c.change!)}</span>
+          </div>
         </div>
       `
         )

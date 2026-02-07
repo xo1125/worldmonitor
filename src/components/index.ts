@@ -29,6 +29,7 @@ export * from './TechReadinessPanel';
 export * from './SatelliteFiresPanel';
 
 export * from './StablecoinPanel';
+export * from './StablecoinSupplyPanel';
 export * from './CryptoHeatmapPanel';
 export * from './MacroSignalsPanel';
 export * from './SignalCardPanel';

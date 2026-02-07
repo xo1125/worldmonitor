@@ -63,6 +63,7 @@ import {
   InsightsPanel,
   TechReadinessPanel,
   StablecoinPanel,
+  StablecoinSupplyPanel,
   CryptoHeatmapPanel,
   SignalCardPanel,
   WatchlistPanel,
@@ -244,15 +245,17 @@ export class App {
     this.signalModal.setLocationClickHandler((lat, lon) => {
       this.map?.setCenter(lat, lon, 4);
     });
-    const findingsBadge = new IntelligenceGapBadge();
-    findingsBadge.setOnSignalClick((signal) => {
-      if (this.countryIntelModal?.isVisible()) return;
-      this.signalModal?.showSignal(signal);
-    });
-    findingsBadge.setOnAlertClick((alert) => {
-      if (this.countryIntelModal?.isVisible()) return;
-      this.signalModal?.showAlert(alert);
-    });
+    if (SITE_VARIANT !== 'crypto') {
+      const findingsBadge = new IntelligenceGapBadge();
+      findingsBadge.setOnSignalClick((signal) => {
+        if (this.countryIntelModal?.isVisible()) return;
+        this.signalModal?.showSignal(signal);
+      });
+      findingsBadge.setOnAlertClick((alert) => {
+        if (this.countryIntelModal?.isVisible()) return;
+        this.signalModal?.showAlert(alert);
+      });
+    }
     this.setupMobileWarning();
     this.setupPlaybackControl();
     this.setupStatusPanel();
@@ -1399,14 +1402,15 @@ export class App {
       const etfFlowsPanel = new ETFFlowsPanel();
       this.panels['etf-flows'] = etfFlowsPanel;
 
+      const stablecoinSupplyPanel = new StablecoinSupplyPanel();
+      this.panels['stablecoin-supply'] = stablecoinSupplyPanel;
+
       // Crypto-specific news panels (trimmed to 3: trading, finance, regulation)
       const cryptoRegulationPanel = new NewsPanel('regulation', 'Crypto Regulation');
-      this.attachRelatedAssetHandlers(cryptoRegulationPanel);
       this.newsPanels['regulation'] = cryptoRegulationPanel;
       this.panels['regulation'] = cryptoRegulationPanel;
 
       const tradingPanel = new NewsPanel('trading', 'Trading & Analysis');
-      this.attachRelatedAssetHandlers(tradingPanel);
       this.newsPanels['trading'] = tradingPanel;
       this.panels['trading'] = tradingPanel;
     }
@@ -2598,6 +2602,7 @@ export class App {
       try {
         const stablecoins = await fetchStablecoins();
         (this.panels['stablecoins'] as StablecoinPanel)?.renderStablecoins(stablecoins);
+        (this.panels['stablecoin-supply'] as StablecoinSupplyPanel)?.renderSupply(stablecoins);
       } catch (e) {
         console.error('[App] Stablecoins load failed:', e);
       }

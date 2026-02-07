@@ -13,57 +13,7 @@ export class TaoSubnetPanel extends Panel {
       return;
     }
 
-    const cards = data
-      .map((subnet) => {
-        const netuidDisplay = typeof subnet.netuid === 'number' ? `SN${subnet.netuid}` : subnet.netuid;
-        const statusClass =
-          subnet.status === 'active'
-            ? 'subnet-active'
-            : subnet.status === 'inactive'
-              ? 'subnet-inactive'
-              : 'subnet-unknown';
-        const statusDot =
-          subnet.status === 'active'
-            ? '●'
-            : subnet.status === 'inactive'
-              ? '○'
-              : '◌';
-
-        // Build metrics row if we have live data
-        let metricsHtml = '';
-        if (subnet.emissions !== undefined && subnet.emissions !== null) {
-          metricsHtml += `<span class="subnet-metric" title="Emissions">τ ${typeof subnet.emissions === 'number' ? subnet.emissions.toFixed(2) : subnet.emissions}</span>`;
-        }
-        if (subnet.validators !== undefined && subnet.validators !== null) {
-          metricsHtml += `<span class="subnet-metric" title="Validators">V: ${subnet.validators}</span>`;
-        }
-        if (subnet.registrations !== undefined && subnet.registrations !== null) {
-          metricsHtml += `<span class="subnet-metric" title="Registrations">R: ${subnet.registrations}</span>`;
-        }
-
-        // Link to taostats for numeric netuids
-        const linkUrl = typeof subnet.netuid === 'number'
-          ? `https://taostats.io/subnets/${subnet.netuid}/`
-          : '#';
-        const linkTarget = typeof subnet.netuid === 'number' ? ' target="_blank" rel="noopener"' : '';
-
-        return `
-          <a href="${linkUrl}"${linkTarget} class="tao-subnet-card ${statusClass}">
-            <div class="subnet-header">
-              <span class="subnet-name">${escapeHtml(subnet.name)}</span>
-              <span class="subnet-netuid">${escapeHtml(String(netuidDisplay))}</span>
-            </div>
-            <div class="subnet-status">
-              <span class="subnet-dot">${statusDot}</span>
-              <span>${escapeHtml(subnet.status)}</span>
-            </div>
-            ${metricsHtml ? `<div class="subnet-metrics">${metricsHtml}</div>` : ''}
-          </a>
-        `;
-      })
-      .join('');
-
-    // TAO price header (shared across all subnets)
+    // TAO price header
     const taoPrice = data[0]?.taoPrice;
     const taoChange = data[0]?.taoChange;
     let priceHeader = '';
@@ -73,13 +23,50 @@ export class TaoSubnetPanel extends Panel {
       priceHeader = `
         <div class="tao-price-header">
           <span class="tao-price-label">TAO</span>
-          <span class="tao-price-value">${taoPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          <span class="tao-price-value">$${taoPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           <span class="tao-price-change ${changeClass}">${changePrefix}${(taoChange ?? 0).toFixed(2)}%</span>
         </div>
       `;
     }
 
-    const html = `${priceHeader}<div class="tao-subnets-grid">${cards}</div>`;
+    // Compact table rows
+    const rows = data
+      .map((subnet) => {
+        const netuidDisplay = typeof subnet.netuid === 'number' ? `SN${subnet.netuid}` : subnet.netuid;
+        const statusDot = subnet.status === 'active' ? '●' : subnet.status === 'inactive' ? '○' : '◌';
+        const statusClass = subnet.status === 'active' ? 'subnet-active' : subnet.status === 'inactive' ? 'subnet-inactive' : 'subnet-unknown';
+        const linkUrl = typeof subnet.netuid === 'number' ? `https://taostats.io/subnets/${subnet.netuid}/` : '#';
+        const linkTarget = typeof subnet.netuid === 'number' ? ' target="_blank" rel="noopener"' : '';
+
+        // Emissions display
+        const emissionStr = subnet.emissions !== undefined && subnet.emissions !== null
+          ? `τ ${typeof subnet.emissions === 'number' ? subnet.emissions.toFixed(2) : subnet.emissions}`
+          : '';
+
+        return `
+          <a href="${linkUrl}"${linkTarget} class="tao-row ${statusClass}">
+            <span class="tao-row-dot">${statusDot}</span>
+            <span class="tao-row-name">${escapeHtml(subnet.name)}</span>
+            <span class="tao-row-netuid">${escapeHtml(String(netuidDisplay))}</span>
+            <span class="tao-row-emission">${emissionStr}</span>
+          </a>
+        `;
+      })
+      .join('');
+
+    const html = `
+      ${priceHeader}
+      <div class="tao-list">
+        <div class="tao-list-header">
+          <span></span>
+          <span>Name</span>
+          <span>Subnet</span>
+          <span>Emission</span>
+        </div>
+        ${rows}
+      </div>
+    `;
+
     this.setContent(html);
   }
 }

@@ -69,7 +69,6 @@ const TECH_LIVE_CHANNELS: LiveChannel[] = [
 const CRYPTO_LIVE_CHANNELS: LiveChannel[] = [
   { id: 'bloomberg', name: 'Bloomberg', handle: '@Bloomberg', fallbackVideoId: 'iEpJwprxDdk' },
   { id: 'cnbc', name: 'CNBC', handle: '@CNBC', fallbackVideoId: '9NyxcX3rhQs' },
-  { id: 'coinbureau', name: 'Coin Bureau', handle: '@CoinBureau', fallbackVideoId: '', useFallbackOnly: true },
   { id: 'yahoo', name: 'Yahoo Finance', handle: '@YahooFinance', fallbackVideoId: 'KQp-e_XQnDE' },
 ];
 

@@ -92,6 +92,7 @@ export const DEFAULT_PANELS: Record<string, PanelConfig> = {
   'signal-technical': { name: 'Technical Trend', enabled: true, priority: 1 },
   'signal-hashrate': { name: 'Hash Rate', enabled: true, priority: 1 },
   'signal-mining': { name: 'Mining Cost', enabled: true, priority: 1 },
+  'signal-feargreed': { name: 'Fear & Greed', enabled: true, priority: 1 },
   commodities: { name: 'Commodities / VIX', enabled: true, priority: 1 },
   watchlist: { name: 'Watchlist', enabled: true, priority: 1 },
   'etf-flows': { name: 'BTC ETF Tracker', enabled: true, priority: 1 },

@@ -11,6 +11,27 @@ const DAILY_BTC_MINED = 450; // post-halving: 3.125 BTC × 144 blocks
 const AVG_EFFICIENCY_J_PER_TH = 25; // modern ASIC (S21-class)
 const AVG_ELECTRICITY_USD_PER_KWH = 0.05;
 
+async function fetchFearGreedIndex() {
+  try {
+    const url = 'https://api.alternative.me/fng/?limit=30';
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const data = await response.json();
+    const entries = data.data;
+    if (!entries || entries.length === 0) return null;
+
+    const current = parseInt(entries[0].value, 10);
+    const yesterday = entries.length > 1 ? parseInt(entries[1].value, 10) : current;
+    const weekAgo = entries.length > 7 ? parseInt(entries[7].value, 10) : current;
+    const sparkline = entries.slice(0, 30).map(e => parseInt(e.value, 10)).reverse();
+    const classification = entries[0].value_classification;
+
+    return { current, yesterday, weekAgo, sparkline, classification };
+  } catch {
+    return null;
+  }
+}
+
 async function fetchBTCHashRate() {
   try {
     const url = 'https://mempool.space/api/v1/mining/hashrate/1m';
@@ -100,7 +121,7 @@ function calcVWAP(closes, volumes) {
   return sumV > 0 ? sumPV / sumV : closes[closes.length - 1];
 }
 
-function computeSignals(quotes, hashRateData) {
+function computeSignals(quotes, hashRateData, fearGreedData) {
   const jpy = quotes['JPY=X'];
   const btc = quotes['BTC-USD'];
   const qqq = quotes['QQQ'];
@@ -249,6 +270,36 @@ function computeSignals(quotes, hashRateData) {
     }
   }
 
+  // Signal 7: Fear & Greed Index
+  if (fearGreedData) {
+    const { current, yesterday, weekAgo, sparkline: fgSparkline } = fearGreedData;
+    const weekChange = current - weekAgo;
+    let label, status;
+    if (current <= 25) { label = 'EXTREME FEAR'; status = 'bearish'; }
+    else if (current <= 45) { label = 'FEAR'; status = 'bearish'; }
+    else if (current <= 55) { label = 'NEUTRAL'; status = 'neutral'; }
+    else if (current <= 75) { label = 'GREED'; status = 'bullish'; }
+    else { label = 'EXTREME GREED'; status = 'bullish'; }
+
+    signals.push({
+      name: 'Fear & Greed',
+      label,
+      status,
+      value: `${current} / 100`,
+      detail: current <= 25 ? 'Extreme fear → potential buying opportunity'
+        : current <= 45 ? 'Market fearful → caution warranted'
+        : current <= 55 ? 'Sentiment balanced'
+        : current <= 75 ? 'Greed rising → momentum but watch for reversal'
+        : 'Extreme greed → elevated correction risk',
+      sparkline: fgSparkline,
+      supportingData: {
+        'Today': `${current}`,
+        'Yesterday': `${yesterday}`,
+        '7d Change': `${weekChange > 0 ? '+' : ''}${weekChange}`,
+      },
+    });
+  }
+
   // Overall verdict
   const allBullish = signals.every(s => s.status === 'bullish');
   const verdict = allBullish ? 'BUY' : 'CASH';
@@ -271,17 +322,18 @@ export default async function handler(req) {
   }
 
   try {
-    // Fetch all quotes + hashrate in parallel
-    const [yahooResults, hashRateData] = await Promise.all([
+    // Fetch all quotes + hashrate + fear/greed in parallel
+    const [yahooResults, hashRateData, fearGreedData] = await Promise.all([
       Promise.all(TICKERS.map(fetchYahooQuote)),
       fetchBTCHashRate(),
+      fetchFearGreedIndex(),
     ]);
     const quotes = {};
     TICKERS.forEach((ticker, i) => {
       if (yahooResults[i]) quotes[ticker] = yahooResults[i];
     });
 
-    const signalResult = computeSignals(quotes, hashRateData);
+    const signalResult = computeSignals(quotes, hashRateData, fearGreedData);
     const responseBody = JSON.stringify(signalResult);
 
     // Cache the result

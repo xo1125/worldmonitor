@@ -1384,6 +1384,7 @@ export class App {
         ['signal-technical', 'Technical Trend'],
         ['signal-hashrate', 'Hash Rate'],
         ['signal-mining', 'Mining Cost'],
+        ['signal-feargreed', 'Fear & Greed'],
       ];
       for (const [panelId, panelTitle] of SIGNAL_PANELS) {
         this.panels[panelId] = new SignalCardPanel(panelId, panelTitle);
@@ -2619,6 +2620,7 @@ export class App {
             'Technical Trend': 'signal-technical',
             'Hash Rate': 'signal-hashrate',
             'Mining Cost': 'signal-mining',
+            'Fear & Greed': 'signal-feargreed',
           };
           for (const signal of macroData.signals) {
             const panelId = signalPanelMap[signal.name];

@@ -12,7 +12,7 @@ import {
   STORAGE_KEYS,
   SITE_VARIANT,
 } from '@/config';
-import { fetchCategoryFeeds, fetchMultipleStocks, fetchCrypto, fetchStablecoins, fetchCryptoSectors, fetchMacroSignals, fetchWatchlist, fetchTaoSubnets, fetchETFFlows, fetchPredictions, fetchEarthquakes, fetchWeatherAlerts, fetchFredData, fetchInternetOutages, isOutagesConfigured, fetchAisSignals, initAisStream, getAisStatus, disconnectAisStream, isAisConfigured, fetchCableActivity, fetchProtestEvents, getProtestStatus, fetchFlightDelays, fetchMilitaryFlights, fetchMilitaryVessels, initMilitaryVesselStream, isMilitaryVesselTrackingConfigured, initDB, updateBaseline, calculateDeviation, addToSignalHistory, saveSnapshot, cleanOldSnapshots, analysisWorker, fetchPizzIntStatus, fetchGdeltTensions, fetchNaturalEvents, fetchRecentAwards, fetchOilAnalytics } from '@/services';
+import { fetchCategoryFeeds, fetchMultipleStocks, fetchCrypto, fetchStablecoins, fetchCryptoSectors, fetchMacroSignals, fetchWatchlist, fetchETFFlows, fetchPredictions, fetchEarthquakes, fetchWeatherAlerts, fetchFredData, fetchInternetOutages, isOutagesConfigured, fetchAisSignals, initAisStream, getAisStatus, disconnectAisStream, isAisConfigured, fetchCableActivity, fetchProtestEvents, getProtestStatus, fetchFlightDelays, fetchMilitaryFlights, fetchMilitaryVessels, initMilitaryVesselStream, isMilitaryVesselTrackingConfigured, initDB, updateBaseline, calculateDeviation, addToSignalHistory, saveSnapshot, cleanOldSnapshots, analysisWorker, fetchPizzIntStatus, fetchGdeltTensions, fetchNaturalEvents, fetchRecentAwards, fetchOilAnalytics } from '@/services';
 import { fetchCountryMarkets } from '@/services/polymarket';
 import { mlWorker } from '@/services/ml-worker';
 import { clusterNewsHybrid } from '@/services/clustering';
@@ -67,7 +67,6 @@ import {
   CryptoHeatmapPanel,
   SignalCardPanel,
   WatchlistPanel,
-  TaoSubnetPanel,
   ETFFlowsPanel,
 } from '@/components';
 import type { SearchResult } from '@/components/SearchModal';
@@ -1385,7 +1384,6 @@ export class App {
         ['signal-macro', 'Macro Regime'],
         ['signal-technical', 'Technical Trend'],
         ['signal-hashrate', 'Hash Rate'],
-        ['signal-mining', 'Mining Cost'],
         ['signal-feargreed', 'Fear & Greed'],
       ];
       for (const [panelId, panelTitle] of SIGNAL_PANELS) {
@@ -1394,9 +1392,6 @@ export class App {
 
       const watchlistPanel = new WatchlistPanel();
       this.panels['watchlist'] = watchlistPanel;
-
-      const taoSubnetPanel = new TaoSubnetPanel();
-      this.panels['tao-subnets'] = taoSubnetPanel;
 
       const etfFlowsPanel = new ETFFlowsPanel();
       this.panels['etf-flows'] = etfFlowsPanel;
@@ -1577,9 +1572,11 @@ export class App {
     const techReadinessPanel = new TechReadinessPanel();
     this.panels['tech-readiness'] = techReadinessPanel;
 
-    // AI Insights Panel (desktop only - hides itself on mobile)
-    const insightsPanel = new InsightsPanel();
-    this.panels['insights'] = insightsPanel;
+    // AI Insights Panel (desktop only - hides itself on mobile; skipped for crypto variant)
+    if (SITE_VARIANT !== 'crypto') {
+      const insightsPanel = new InsightsPanel();
+      this.panels['insights'] = insightsPanel;
+    }
 
     // Add panels to grid in saved order
     // Use DEFAULT_PANELS keys for variant-aware panel order
@@ -2635,7 +2632,6 @@ export class App {
             'Macro Regime': 'signal-macro',
             'Technical Trend': 'signal-technical',
             'Hash Rate': 'signal-hashrate',
-            'Mining Cost': 'signal-mining',
             'Fear & Greed': 'signal-feargreed',
           };
           for (const signal of macroData.signals) {
@@ -2655,14 +2651,6 @@ export class App {
         (this.panels['watchlist'] as WatchlistPanel)?.renderWatchlist(watchlistData);
       } catch (e) {
         console.error('[App] Watchlist load failed:', e);
-      }
-
-      // TAO Subnets
-      try {
-        const taoData = await fetchTaoSubnets();
-        (this.panels['tao-subnets'] as TaoSubnetPanel)?.renderSubnets(taoData);
-      } catch (e) {
-        console.error('[App] TAO subnets load failed:', e);
       }
 
       // ETF Flows
@@ -3486,15 +3474,6 @@ export class App {
         }
       }, 60000); // 60s
 
-      this.scheduleRefresh('tao-subnets', async () => {
-        try {
-          const data = await fetchTaoSubnets();
-          (this.panels['tao-subnets'] as TaoSubnetPanel)?.renderSubnets(data);
-        } catch (e) {
-          console.error('[App] TAO subnets refresh failed:', e);
-        }
-      }, 300000); // 5 min
-
       this.scheduleRefresh('etf-flows', async () => {
         try {
           const data = await fetchETFFlows();
@@ -3528,7 +3507,6 @@ export class App {
               'Macro Regime': 'signal-macro',
               'Technical Trend': 'signal-technical',
               'Hash Rate': 'signal-hashrate',
-              'Mining Cost': 'signal-mining',
               'Fear & Greed': 'signal-feargreed',
             };
             for (const signal of macroData.signals) {

@@ -79,6 +79,9 @@ export class CommoditiesPanel extends Panel {
       return;
     }
 
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
     const html =
       '<div class="commodities-grid">' +
       validData
@@ -94,7 +97,8 @@ export class CommoditiesPanel extends Panel {
       `
         )
         .join('') +
-      '</div>';
+      '</div>' +
+      `<div class="commodities-updated">Updated ${timeStr}</div>`;
 
     this.setContent(html);
   }

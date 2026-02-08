@@ -212,9 +212,48 @@ interface CoinGeckoExtendedResponse {
 export async function fetchStablecoins(): Promise<StablecoinData[]> {
   try {
     const ids = Object.keys(STABLECOIN_MAP).join(',');
+    // Use /coins/markets for 7d change and mcap change data
+    const url = `/api/stablecoin-markets?ids=${ids}`;
+    const response = await fetchWithProxy(url);
+    if (!response.ok) {
+      // Fallback to simple/price if markets endpoint fails
+      return fetchStablecoinsFallback();
+    }
+    const coins: Array<{
+      id: string;
+      current_price: number;
+      price_change_percentage_24h: number;
+      price_change_percentage_7d_in_currency: number;
+      market_cap: number;
+      total_volume: number;
+      market_cap_change_24h: number;
+    }> = await response.json();
+
+    return coins.map(coin => {
+      const info = STABLECOIN_MAP[coin.id];
+      return {
+        name: info?.name ?? coin.id,
+        symbol: info?.symbol ?? coin.id.toUpperCase(),
+        price: coin.current_price ?? 1.0,
+        change: coin.price_change_percentage_24h ?? 0,
+        change7d: coin.price_change_percentage_7d_in_currency ?? 0,
+        marketCap: coin.market_cap ?? 0,
+        volume24h: coin.total_volume ?? 0,
+        mcapChange24h: coin.market_cap_change_24h ?? 0,
+      };
+    });
+  } catch (e) {
+    console.error('Failed to fetch stablecoins:', e);
+    return fetchStablecoinsFallback();
+  }
+}
+
+async function fetchStablecoinsFallback(): Promise<StablecoinData[]> {
+  try {
+    const ids = Object.keys(STABLECOIN_MAP).join(',');
     const url = `/api/coingecko?ids=${ids}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`;
     const response = await fetchWithProxy(url);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) return [];
     const data: CoinGeckoExtendedResponse = await response.json();
 
     return Object.entries(STABLECOIN_MAP).map(([id, info]) => {
@@ -224,12 +263,13 @@ export async function fetchStablecoins(): Promise<StablecoinData[]> {
         symbol: info.symbol,
         price: coinData?.usd ?? 1.0,
         change: coinData?.usd_24h_change ?? 0,
+        change7d: 0,
         marketCap: coinData?.usd_market_cap ?? 0,
         volume24h: coinData?.usd_24h_vol ?? 0,
+        mcapChange24h: 0,
       };
     });
-  } catch (e) {
-    console.error('Failed to fetch stablecoins:', e);
+  } catch {
     return [];
   }
 }

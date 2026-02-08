@@ -107,8 +107,10 @@ export interface StablecoinData {
   symbol: string;
   price: number;
   change: number;
+  change7d: number;
   marketCap: number;
   volume24h: number;
+  mcapChange24h: number;
 }
 
 export interface CryptoSectorData {

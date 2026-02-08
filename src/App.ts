@@ -62,10 +62,8 @@ import {
   ServiceStatusPanel,
   InsightsPanel,
   TechReadinessPanel,
-  StablecoinPanel,
   StablecoinSupplyPanel,
   BTCMonitorPanel,
-  ReportingPanel,
   CryptoHeatmapPanel,
   SignalCardPanel,
   WatchlistPanel,
@@ -259,7 +257,9 @@ export class App {
       });
     }
     this.setupMobileWarning();
-    this.setupPlaybackControl();
+    if (SITE_VARIANT !== 'crypto') {
+      this.setupPlaybackControl();
+    }
     this.setupStatusPanel();
     this.setupPizzIntIndicator();
     this.setupExportPanel();
@@ -1375,9 +1375,6 @@ export class App {
 
     // Crypto variant panels
     if (SITE_VARIANT === 'crypto') {
-      const stablecoinPanel = new StablecoinPanel();
-      this.panels['stablecoins'] = stablecoinPanel;
-
       const cryptoHeatmapPanel = new CryptoHeatmapPanel();
       this.panels['crypto-heatmap'] = cryptoHeatmapPanel;
 
@@ -1409,9 +1406,6 @@ export class App {
 
       const btcMonitorPanel = new BTCMonitorPanel();
       this.panels['btc-monitor'] = btcMonitorPanel;
-
-      const reportingPanel = new ReportingPanel();
-      this.panels['reporting'] = reportingPanel;
 
       // Crypto-specific news panels (trimmed to 3: trading, finance, regulation)
       const cryptoRegulationPanel = new NewsPanel('regulation', 'Crypto Regulation');
@@ -2609,7 +2603,6 @@ export class App {
     if (SITE_VARIANT === 'crypto') {
       try {
         const stablecoins = await fetchStablecoins();
-        (this.panels['stablecoins'] as StablecoinPanel)?.renderStablecoins(stablecoins);
         (this.panels['stablecoin-supply'] as StablecoinSupplyPanel)?.renderSupply(stablecoins);
       } catch (e) {
         console.error('[App] Stablecoins load failed:', e);
@@ -2623,16 +2616,6 @@ export class App {
         }
       } catch (e) {
         console.error('[App] BTC levels load failed:', e);
-      }
-
-      try {
-        const reportRes = await fetch('/api/crypto-report');
-        if (reportRes.ok) {
-          const reportData = await reportRes.json();
-          (this.panels['reporting'] as ReportingPanel)?.renderReport(reportData);
-        }
-      } catch (e) {
-        console.error('[App] Crypto report load failed:', e);
       }
 
       try {
@@ -3532,6 +3515,31 @@ export class App {
           }
         } catch (e) {
           console.error('[App] BTC levels refresh failed:', e);
+        }
+      }, 300000); // 5 min
+
+      this.scheduleRefresh('macro-signals', async () => {
+        try {
+          const macroData = await fetchMacroSignals();
+          if (macroData) {
+            const signalPanelMap: Record<string, string> = {
+              'Liquidity': 'signal-liquidity',
+              'Flow Structure': 'signal-flow',
+              'Macro Regime': 'signal-macro',
+              'Technical Trend': 'signal-technical',
+              'Hash Rate': 'signal-hashrate',
+              'Mining Cost': 'signal-mining',
+              'Fear & Greed': 'signal-feargreed',
+            };
+            for (const signal of macroData.signals) {
+              const panelId = signalPanelMap[signal.name];
+              if (panelId) {
+                (this.panels[panelId] as SignalCardPanel)?.renderSignal(signal);
+              }
+            }
+          }
+        } catch (e) {
+          console.error('[App] Macro signals refresh failed:', e);
         }
       }, 300000); // 5 min
     }

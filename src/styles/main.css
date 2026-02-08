@@ -6225,21 +6225,9 @@ a.prediction-link:hover {
    Activity Indicators & New Item Badges
    ============================================ */
 
-/* Panel "new" badge in header */
+/* Panel "new" badge in header — hidden for crypto variant */
 .panel-new-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent);
-  color: var(--bg);
-  font-size: 9px;
-  font-weight: bold;
-  padding: 2px 6px;
-  border-radius: 10px;
-  margin-left: 8px;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-  white-space: nowrap;
+  display: none !important;
 }
 
 .panel-new-badge.pulse {
@@ -6257,28 +6245,12 @@ a.prediction-link:hover {
   }
 }
 
-/* Panel header glow when has new items */
-.panel.has-new .panel-header {
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%);
-}
+/* Panel header glow when has new items — disabled */
+.panel.has-new .panel-header { background: none; }
+.panel.has-new .panel-title { color: inherit; }
 
-.panel.has-new .panel-title {
-  color: var(--accent);
-}
-
-/* "NEW" tag on individual news items */
-.new-tag {
-  display: inline-block;
-  background: var(--green);
-  color: var(--bg);
-  font-size: 8px;
-  font-weight: bold;
-  padding: 1px 4px;
-  border-radius: 3px;
-  margin-right: 4px;
-  letter-spacing: 0.5px;
-  animation: new-tag-fade 2s ease-out forwards;
-}
+/* "NEW" tag on individual news items — disabled */
+.new-tag { display: none !important; }
 
 @keyframes new-tag-fade {
   0% {
@@ -9942,6 +9914,35 @@ a.prediction-link:hover {
   font-size: 12px;
   line-height: 1.5;
   color: var(--text);
+  margin: 0;
+}
+
+.insights-brief-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.insights-brief-list li {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text);
+  padding-left: 14px;
+  position: relative;
+}
+
+.insights-brief-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent, #4ade80);
 }
 
 .insights-unavailable,
@@ -10087,6 +10088,19 @@ a.prediction-link:hover {
   font-size: 11px;
   color: var(--text);
   line-height: 1.4;
+}
+
+.insight-story-link {
+  font-size: 11px;
+  color: var(--text);
+  line-height: 1.4;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.insight-story-link:hover {
+  color: var(--accent, #4ade80);
+  text-decoration: underline;
 }
 
 .insight-badges {
@@ -11862,35 +11876,62 @@ body.has-critical-banner .panels-grid {
   padding: 8px;
 }
 
-.supply-total {
-  text-align: center;
-  padding: 12px;
+/* Compact header: total + net flow side by side */
+.supply-header-compact {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
   background: var(--bg-card, #1a1a2e);
   border-radius: 6px;
   border: 1px solid var(--border-dim, #333);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
-.supply-total-label {
+.supply-total-compact {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.supply-total-label-sm {
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--text-dim);
-  margin-bottom: 4px;
 }
 
-.supply-total-value {
-  font-size: 22px;
+.supply-total-num {
+  font-size: 16px;
   font-weight: 700;
   font-family: 'JetBrains Mono', monospace;
   color: var(--text);
 }
 
-.supply-total-sub {
-  font-size: 10px;
-  color: var(--text-dim);
-  margin-top: 4px;
+.supply-flow {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
 }
+
+.supply-flow-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+}
+
+.supply-flow-value {
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.supply-inflow .supply-flow-value { color: #4ade80; }
+.supply-outflow .supply-flow-value { color: #f87171; }
+
+.supply-change-up { color: #4ade80; }
+.supply-change-down { color: #f87171; }
 
 .supply-breakdown {
   padding: 0 4px;
@@ -11898,7 +11939,7 @@ body.has-critical-banner .panels-grid {
 
 .supply-header-row {
   display: grid;
-  grid-template-columns: 60px 1fr 50px 70px;
+  grid-template-columns: 55px 1fr 80px 70px;
   gap: 4px;
   padding: 4px 0;
   border-bottom: 1px solid var(--border);
@@ -11911,11 +11952,18 @@ body.has-critical-banner .panels-grid {
 
 .supply-row {
   display: grid;
-  grid-template-columns: 60px 1fr 50px 70px;
+  grid-template-columns: 55px 1fr 80px 70px;
   gap: 4px;
   padding: 5px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   align-items: center;
+}
+
+.supply-change {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  text-align: right;
+  font-weight: 600;
 }
 
 .supply-row:last-child {

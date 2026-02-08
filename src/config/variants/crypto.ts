@@ -85,30 +85,39 @@ export const FEEDS: Record<string, Feed[]> = {
 };
 
 // Panel configuration for crypto variant — command center layout order
+// Panel layout: grouped by topic, ordered by importance
+// Signal cards (compact, top row) → BTC analysis → Market data → News/Analysis → Bottom shelf
 export const DEFAULT_PANELS: Record<string, PanelConfig> = {
+  // ── Signal Cards (compact top row) ──
   'signal-liquidity': { name: 'Liquidity', enabled: true, priority: 1 },
   'signal-flow': { name: 'Flow Structure', enabled: true, priority: 1 },
   'signal-macro': { name: 'Macro Regime', enabled: true, priority: 1 },
   'signal-technical': { name: 'Technical Trend', enabled: true, priority: 1 },
   'signal-hashrate': { name: 'Hash Rate', enabled: true, priority: 1 },
-  'signal-mining': { name: 'Mining Cost', enabled: true, priority: 1 },
   'signal-feargreed': { name: 'Fear & Greed', enabled: true, priority: 1 },
-  commodities: { name: 'Commodities / VIX', enabled: true, priority: 1 },
-  'stablecoin-supply': { name: 'Stablecoin Supply', enabled: true, priority: 1 },
-  'etf-flows': { name: 'BTC ETF Tracker', enabled: true, priority: 1 },
+
+  // ── BTC Analysis (core monitoring) ──
   'btc-monitor': { name: 'BTC Monitor', enabled: true, priority: 1 },
+  'etf-flows': { name: 'BTC ETF Tracker', enabled: true, priority: 1 },
+
+  // ── Market Data ──
+  commodities: { name: 'Commodities / VIX', enabled: true, priority: 1 },
+  'stablecoin-supply': { name: 'Stablecoins', enabled: true, priority: 1 },
   watchlist: { name: 'Watchlist', enabled: true, priority: 1 },
   crypto: { name: 'Crypto Prices', enabled: true, priority: 1 },
-  'tao-subnets': { name: 'TAO Subnets', enabled: true, priority: 1 },
   'crypto-heatmap': { name: 'Crypto Sectors', enabled: true, priority: 1 },
-  reporting: { name: 'Weekly Report', enabled: true, priority: 1 },
+
+  // ── Intelligence & News ──
   insights: { name: 'AI Crypto Insights', enabled: true, priority: 1 },
   'live-news': { name: 'Crypto Headlines', enabled: true, priority: 1 },
   trading: { name: 'Trading & Analysis', enabled: true, priority: 1 },
   finance: { name: 'Crypto Finance', enabled: true, priority: 1 },
   regulation: { name: 'Crypto Regulation', enabled: true, priority: 1 },
-  polymarket: { name: 'Crypto Predictions', enabled: true, priority: 2 },
-  stablecoins: { name: 'Stablecoins', enabled: true, priority: 2 },
+  polymarket: { name: 'Crypto Predictions', enabled: true, priority: 1 },
+
+  // ── Bottom shelf (lower priority) ──
+  'signal-mining': { name: 'Mining Cost', enabled: true, priority: 2 },
+  'tao-subnets': { name: 'TAO Subnets', enabled: true, priority: 2 },
   monitors: { name: 'My Monitors', enabled: true, priority: 2 },
 };
 

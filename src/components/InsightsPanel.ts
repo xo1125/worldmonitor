@@ -407,10 +407,25 @@ export class InsightsPanel extends Panel {
   }
 
   private renderWorldBrief(brief: string): string {
+    // Parse bullet points into proper HTML list
+    const lines = brief.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const isBulletList = lines.some(l => /^[-•*]/.test(l) || /^\d+\./.test(l));
+
+    let briefHtml: string;
+    if (isBulletList) {
+      const items = lines.map(line => {
+        const cleaned = line.replace(/^[-•*]\s*/, '').replace(/^\d+\.\s*/, '');
+        return `<li>${escapeHtml(cleaned)}</li>`;
+      }).join('');
+      briefHtml = `<ul class="insights-brief-list">${items}</ul>`;
+    } else {
+      briefHtml = `<p class="insights-brief-text">${escapeHtml(brief)}</p>`;
+    }
+
     return `
       <div class="insights-brief">
         <div class="insights-section-title">${SITE_VARIANT === 'tech' ? '🚀 TECH BRIEF' : SITE_VARIANT === 'crypto' ? '₿ CRYPTO BRIEF' : '🌍 WORLD BRIEF'}</div>
-        <div class="insights-brief-text">${escapeHtml(brief)}</div>
+        ${briefHtml}
       </div>
     `;
   }
@@ -441,11 +456,16 @@ export class InsightsPanel extends Panel {
         badges.push('<span class="insight-badge alert">⚠ ALERT</span>');
       }
 
+      const link = cluster.primaryLink || cluster.topSources?.[0]?.url || '';
+      const titleHtml = link
+        ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" class="insight-story-link">${escapeHtml(cluster.primaryTitle.slice(0, 100))}${cluster.primaryTitle.length > 100 ? '...' : ''}</a>`
+        : `<span class="insight-story-title">${escapeHtml(cluster.primaryTitle.slice(0, 100))}${cluster.primaryTitle.length > 100 ? '...' : ''}</span>`;
+
       return `
         <div class="insight-story">
           <div class="insight-story-header">
             <span class="insight-sentiment-dot ${sentimentClass}"></span>
-            <span class="insight-story-title">${escapeHtml(cluster.primaryTitle.slice(0, 100))}${cluster.primaryTitle.length > 100 ? '...' : ''}</span>
+            ${titleHtml}
           </div>
           ${badges.length > 0 ? `<div class="insight-badges">${badges.join('')}</div>` : ''}
         </div>

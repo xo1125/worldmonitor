@@ -50,18 +50,14 @@ export class ETFFlowsPanel extends Panel {
     const validEtfs = data.etfs.filter((e) => e.price !== null);
 
     const flowClass = data.aggregate.estimatedNetFlow >= 0 ? 'etf-inflow' : 'etf-outflow';
-    const changeClass = data.aggregate.avgChange >= 0 ? 'etf-positive' : 'etf-negative';
 
     const rows = validEtfs
       .map((etf) => {
-        const chgClass = (etf.change ?? 0) >= 0 ? 'etf-positive' : 'etf-negative';
-        const chgStr = etf.change != null ? `${etf.change >= 0 ? '+' : ''}${etf.change.toFixed(2)}%` : '--';
-        // Estimate flow per ETF: volume * price * direction (sign of change)
         const dollarVol = (etf.volume ?? 0) * (etf.price ?? 0);
         const changePct = etf.change ?? 0;
         const direction = changePct >= 0 ? 1 : -1;
-        const weight = Math.min(Math.abs(changePct) / 100, 0.5); // cap at 50%
-        const estFlow = dollarVol * Math.max(weight, 0.02) * direction; // min 2% weight
+        const weight = Math.min(Math.abs(changePct) / 100, 0.5);
+        const estFlow = dollarVol * Math.max(weight, 0.02) * direction;
         const flowStr = dollarVol > 0 ? this.formatFlow(estFlow) : '--';
         const etfFlowClass = estFlow >= 0 ? 'etf-positive' : 'etf-negative';
         const volStr = dollarVol > 0 ? this.formatVolume(dollarVol) : '--';
@@ -71,12 +67,15 @@ export class ETFFlowsPanel extends Panel {
             <td class="etf-ticker">${escapeHtml(etf.ticker)}</td>
             <td class="etf-issuer">${escapeHtml(etf.issuer)}</td>
             <td class="etf-flow ${etfFlowClass}">${flowStr}</td>
-            <td class="etf-change ${chgClass}">${chgStr}</td>
             <td class="etf-vol">${volStr}</td>
           </tr>
         `;
       })
       .join('');
+
+    const updatedTime = data.lastUpdated
+      ? new Date(data.lastUpdated).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+      : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     const html = `
       <div class="etf-flows-container">
@@ -86,12 +85,12 @@ export class ETFFlowsPanel extends Panel {
             <span class="etf-agg-value ${flowClass}">${this.formatFlow(data.aggregate.estimatedNetFlow)}</span>
           </div>
           <div class="etf-agg-item">
-            <span class="etf-agg-label">Avg Change</span>
-            <span class="etf-agg-value ${changeClass}">${data.aggregate.avgChange >= 0 ? '+' : ''}${data.aggregate.avgChange.toFixed(2)}%</span>
-          </div>
-          <div class="etf-agg-item">
             <span class="etf-agg-label">Total Volume</span>
             <span class="etf-agg-value">${this.formatVolume(data.aggregate.totalVolume)}</span>
+          </div>
+          <div class="etf-agg-item">
+            <span class="etf-agg-label">ETFs Tracked</span>
+            <span class="etf-agg-value">${data.aggregate.etfCount}</span>
           </div>
         </div>
         <table class="etf-table">
@@ -100,12 +99,12 @@ export class ETFFlowsPanel extends Panel {
               <th>ETF</th>
               <th>Issuer</th>
               <th>Est. Flow</th>
-              <th>24h</th>
               <th>Vol</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
         </table>
+        <div class="etf-updated">Updated ${updatedTime}</div>
       </div>
     `;
 

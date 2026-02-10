@@ -12077,8 +12077,7 @@ body.has-critical-banner .panels-grid {
 }
 
 .etf-table thead th:nth-child(3),
-.etf-table thead th:nth-child(4),
-.etf-table thead th:nth-child(5) {
+.etf-table thead th:nth-child(4) {
   text-align: right;
 }
 
@@ -12111,8 +12110,12 @@ body.has-critical-banner .panels-grid {
   color: var(--text-secondary, #bbb);
 }
 
-.etf-change.etf-positive { color: #4ade80; }
-.etf-change.etf-negative { color: #f87171; }
+.etf-updated {
+  text-align: right;
+  font-size: 9px;
+  color: var(--text-dim, #666);
+  padding: 6px 6px 0;
+}
 
 /* ── Auto-expand hero panels ── */
 .panel[data-panel="watchlist"]:not(.resized),

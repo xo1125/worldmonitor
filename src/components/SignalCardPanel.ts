@@ -4,12 +4,11 @@ import { escapeHtml } from '@/utils/sanitize';
 
 // Map signal names to external URLs
 const SIGNAL_LINKS: Record<string, string> = {
-  'Liquidity': 'https://www.tradingview.com/chart/?symbol=BTCUSDT',
-  'Flow Structure': 'https://www.tradingview.com/chart/?symbol=BTCUSDT&interval=240',
-  'Macro Regime': 'https://www.tradingview.com/chart/?symbol=DXY',
-  'Technical Trend': 'https://www.tradingview.com/chart/?symbol=BTCUSD',
+  'Liquidity': 'https://www.tradingview.com/chart/?symbol=BINANCE:USDT.D',
+  'Flow Structure': 'https://www.coinglass.com/flow/bitcoin',
+  'Macro Regime': 'https://www.tradingview.com/chart/?symbol=TVC:DXY',
+  'Technical Trend': 'https://www.tradingview.com/chart/?symbol=BITSTAMP:BTCUSD',
   'Hash Rate': 'https://mempool.space/graphs/mining/hashrate-difficulty',
-  'Mining Cost': 'https://www.braiins.com/blog/bitcoin-mining-analogy',
   'Fear & Greed': 'https://alternative.me/crypto/fear-and-greed-index/',
 };
 

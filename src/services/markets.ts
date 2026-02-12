@@ -387,18 +387,22 @@ export async function fetchTaoSubnets(): Promise<TaoSubnet[]> {
 
 // ETF Flows data
 export interface ETFFlowsResult {
+  source: string;
   etfs: Array<{
     ticker: string;
-    name: string;
     issuer: string;
-    price: number | null;
-    change: number | null;
+    dailyNetInflow: number | null;
+    flowStatus?: number;
+    netAssets: number | null;
     volume: number | null;
+    cumNetInflow?: number | null;
+    fee?: number | null;
   }>;
   aggregate: {
+    dailyNetInflow: number;
     totalVolume: number;
-    avgChange: number;
-    estimatedNetFlow: number;
+    totalNetAssets: number;
+    cumNetInflow: number;
     etfCount: number;
   };
   lastUpdated: string;

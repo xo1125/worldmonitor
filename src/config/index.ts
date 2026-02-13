@@ -9,8 +9,8 @@ export {
 } from './variants/base';
 
 // Market data
-export { SECTORS, COMMODITIES, MARKET_SYMBOLS, CRYPTO_MAP, CRYPTO_IDS, STABLECOIN_IDS, STABLECOIN_MAP, CRYPTO_SECTORS, WATCHLIST_MAP, WATCHLIST_IDS, TAO_SUBNETS } from './markets';
-export type { CryptoSector, TaoSubnetConfig } from './markets';
+export { SECTORS, COMMODITIES, MARKET_SYMBOLS, CRYPTO_MAP, CRYPTO_IDS, STABLECOIN_IDS, STABLECOIN_MAP, CRYPTO_SECTORS, WATCHLIST_MAP, WATCHLIST_IDS, PORTFOLIO_MAP, PORTFOLIO_IDS, PORTFOLIO_CATEGORY_ORDER, CATEGORY_PANEL_IDS, TAO_SUBNETS } from './markets';
+export type { CryptoSector, TaoSubnetConfig, PortfolioCategory, PortfolioTokenConfig } from './markets';
 
 // Feeds configuration
 export {

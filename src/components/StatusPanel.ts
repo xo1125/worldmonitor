@@ -19,11 +19,11 @@ interface ApiStatus {
 // Crypto-only allowlists
 const CRYPTO_FEEDS = new Set([
   'Bitcoin', 'Ethereum', 'Altcoins', 'Defi', 'Nft',
-  'Regulation', 'Trading', 'Finance', 'Crypto',
-  'Polymarket', 'Markets'
+  'Regulation', 'Trading', 'Finance',
+  'Polymarket'
 ]);
 const CRYPTO_APIS = new Set([
-  'RSS Proxy', 'CoinGecko', 'Polymarket', 'Macro Signals'
+  'RSS Proxy', 'CoinGecko', 'Polymarket', 'Macro Signals', 'Finnhub'
 ]);
 
 export class StatusPanel {

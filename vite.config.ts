@@ -3,10 +3,10 @@ import { resolve } from 'path';
 import pkg from './package.json';
 
 const VARIANT_META = {
-  title: 'FC Monitor - Real-Time Cryptocurrency Dashboard',
-  description: 'Real-time cryptocurrency dashboard tracking Bitcoin, Ethereum, DeFi, NFTs, market data, regulation, and blockchain news worldwide.',
-  keywords: 'crypto dashboard, Bitcoin, Ethereum, cryptocurrency, DeFi, NFT, blockchain, crypto markets, crypto news, altcoins, crypto regulation, trading, market analysis, stablecoins, crypto prices, Solana, Bittensor',
-  url: 'https://worldmonitor-crypto.vercel.app/',
+  title: 'FC Monitor',
+  description: 'Real-time cryptocurrency intelligence dashboard. Bitcoin on-chain levels, ETF flows, stablecoin health, macro signals, and curated crypto news.',
+  keywords: 'crypto dashboard, bitcoin monitor, ETF flows, stablecoin tracking, crypto news, DeFi, on-chain analysis, crypto intelligence, BTC levels, fear greed index',
+  url: 'https://fcmonitor.com/',
   siteName: 'FC Monitor',
   features: [
     'Real-time crypto price tracking',

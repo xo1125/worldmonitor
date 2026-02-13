@@ -37,10 +37,13 @@ const INSTITUTE_TO_TICKER = {
 
 async function fetchSoSoValue() {
   const apiKey = process.env.SOSOVALUE_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    console.warn('[ETF] No SOSOVALUE_API_KEY env var found');
+    return null;
+  }
 
   try {
-    const res = await fetch('https://api.sosovalue.xyz/openapi/v2/etf/currentEtfDataMetrics', {
+    const res = await fetch('https://openapi.sosovalue.com/openapi/v2/etf/currentEtfDataMetrics', {
       method: 'POST',
       headers: {
         'x-soso-api-key': apiKey,
@@ -49,39 +52,61 @@ async function fetchSoSoValue() {
       body: JSON.stringify({ type: 'us-btc-spot' }),
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`[ETF] SoSoValue HTTP ${res.status}: ${res.statusText}`);
+      const text = await res.text().catch(() => '');
+      console.error(`[ETF] SoSoValue response body: ${text.slice(0, 500)}`);
+      return null;
+    }
     const json = await res.json();
-    if (json.code !== 0 || !json.data) return null;
+    if (json.code !== 0 || !json.data) {
+      console.error(`[ETF] SoSoValue API error: code=${json.code}, msg=${json.msg}`);
+      return null;
+    }
 
     const d = json.data;
+    // Helper: SoSoValue returns values as strings inside {value, status} objects
+    const num = (obj) => {
+      if (obj == null) return null;
+      if (typeof obj === 'number') return obj;
+      if (typeof obj === 'object' && obj.value != null) return parseFloat(obj.value) || null;
+      if (typeof obj === 'string') return parseFloat(obj) || null;
+      return null;
+    };
+
     const etfs = (d.list || []).map((item) => {
       const ticker = item.ticker || INSTITUTE_TO_TICKER[item.institute] || item.institute;
       const issuerMatch = ETF_TICKERS.find((t) => t.ticker === ticker);
       return {
         ticker,
         issuer: item.institute || issuerMatch?.issuer || '',
-        dailyNetInflow: item.dailyNetInflow?.value ?? null,
-        flowStatus: item.dailyNetInflow?.dataStatus ?? 3,
-        netAssets: item.netAssets?.value ?? null,
-        volume: item.dailyValueTraded?.value ?? null,
-        cumNetInflow: item.cumNetInflow?.value ?? null,
-        fee: item.fee ?? null,
+        dailyNetInflow: num(item.dailyNetInflow),
+        flowStatus: item.dailyNetInflow?.dataStatus ?? item.dailyNetInflow?.status ?? 3,
+        netAssets: num(item.netAssets),
+        volume: num(item.dailyValueTraded),
+        cumNetInflow: num(item.cumNetInflow),
+        fee: num(item.fee),
+        change: num(item.dailyPriceChange),
       };
     });
+
+    const aggFlow = num(d.dailyNetInflow);
+    console.log(`[ETF] SoSoValue OK: ${etfs.length} ETFs, net flow: ${aggFlow}`);
 
     return {
       source: 'sosovalue',
       etfs,
       aggregate: {
-        dailyNetInflow: d.dailyNetInflow ?? 0,
-        totalVolume: d.dailyTotalValueTraded ?? 0,
-        totalNetAssets: d.totalNetAssets ?? 0,
-        cumNetInflow: d.cumNetInflow ?? 0,
+        dailyNetInflow: aggFlow ?? 0,
+        totalVolume: num(d.dailyTotalValueTraded) ?? 0,
+        totalNetAssets: num(d.totalNetAssets) ?? 0,
+        cumNetInflow: num(d.cumNetInflow) ?? 0,
         etfCount: etfs.length,
       },
       lastUpdated: new Date().toISOString(),
     };
-  } catch {
+  } catch (err) {
+    console.error('[ETF] SoSoValue fetch exception:', err?.message || err);
     return null;
   }
 }
@@ -116,6 +141,7 @@ async function fetchYahooFallback() {
           flowStatus: 0, // estimated
           volume: Math.round(dollarVol),
           netAssets: null,
+          change: Math.round(change * 100) / 100,
         };
       } catch {
         return { ...etf, dailyNetInflow: null, volume: null, netAssets: null };
@@ -142,17 +168,13 @@ async function fetchYahooFallback() {
   };
 }
 
-export default async function handler(req) {
+export default async function handler(req, res) {
   try {
     const now = Date.now();
     if (cache.data && now - cache.ts < CACHE_TTL) {
-      return new Response(JSON.stringify(cache.data), {
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'public, s-maxage=900, stale-while-revalidate=300',
-          'X-Cache': 'HIT',
-        },
-      });
+      res.setHeader('Cache-Control', 'public, s-maxage=900, stale-while-revalidate=300');
+      res.setHeader('X-Cache', 'HIT');
+      return res.json(cache.data);
     }
 
     // Try SoSoValue first (real data), fall back to Yahoo (estimated)
@@ -163,25 +185,17 @@ export default async function handler(req) {
 
     cache = { data, ts: now };
 
-    return new Response(JSON.stringify(data), {
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, s-maxage=900, stale-while-revalidate=300',
-        'X-Cache': 'MISS',
-      },
-    });
+    res.setHeader('Cache-Control', 'public, s-maxage=900, stale-while-revalidate=300');
+    res.setHeader('X-Cache', 'MISS');
+    return res.json(data);
   } catch (error) {
-    return new Response(
-      JSON.stringify({
-        error: 'Failed to fetch ETF data',
-        source: 'error',
-        etfs: [],
-        aggregate: { dailyNetInflow: 0, totalVolume: 0, totalNetAssets: 0, cumNetInflow: 0, etfCount: 0 },
-        lastUpdated: new Date().toISOString(),
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    console.error('[ETF] Handler error:', error);
+    return res.json({
+      error: 'Failed to fetch ETF data',
+      source: 'error',
+      etfs: [],
+      aggregate: { dailyNetInflow: 0, totalVolume: 0, totalNetAssets: 0, cumNetInflow: 0, etfCount: 0 },
+      lastUpdated: new Date().toISOString(),
+    });
   }
 }
-
-export const config = { runtime: 'edge' };

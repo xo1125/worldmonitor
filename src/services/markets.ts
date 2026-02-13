@@ -1,5 +1,7 @@
-import type { MarketData, CryptoData, StablecoinData, CryptoSectorData, MacroSignalResult, WatchlistData, TaoSubnet } from '@/types';
-import { API_URLS, CRYPTO_MAP, CRYPTO_IDS, STABLECOIN_MAP, CRYPTO_SECTORS, WATCHLIST_MAP, WATCHLIST_IDS, TAO_SUBNETS } from '@/config';
+import type { MarketData, CryptoData, StablecoinData, CryptoSectorData, MacroSignalResult, PortfolioData, TaoSubnet } from '@/types';
+import type { TokenCategoryData } from '@/components/TokenCategoryPanel';
+import type { PortfolioCategory } from '@/config/markets';
+import { API_URLS, CRYPTO_MAP, CRYPTO_IDS, STABLECOIN_MAP, CRYPTO_SECTORS, WATCHLIST_IDS, PORTFOLIO_MAP, PORTFOLIO_CATEGORY_ORDER, CATEGORY_PANEL_IDS, TAO_SUBNETS } from '@/config';
 import { fetchWithProxy } from '@/utils';
 
 interface FinnhubQuote {
@@ -32,17 +34,11 @@ interface YahooFinanceResponse {
   };
 }
 
-interface CoinGeckoResponse {
-  [key: string]: {
-    usd: number;
-    usd_24h_change: number;
-  };
-}
-
 // Symbols that need Yahoo Finance (indices and futures not supported by Finnhub free tier)
 const YAHOO_ONLY_SYMBOLS = new Set([
   '^GSPC', '^DJI', '^IXIC', '^VIX',
-  'GC=F', 'CL=F', 'NG=F', 'SI=F', 'HG=F',
+  'GC=F', 'CL=F', 'NG=F', 'SI=F',
+  'DX-Y.NYB',
 ]);
 
 let lastSuccessfulResults: MarketData[] = [];
@@ -163,16 +159,20 @@ export async function fetchStockQuote(
   return results[0] || { symbol, name, display, price: null, change: null };
 }
 
-// Shared CoinGecko batch response (crypto + watchlist in one call)
+// Shared CoinGecko batch response (crypto + watchlist + sector coins in one call)
 let _batchCache: { data: CoinGeckoExtendedResponse | null; timestamp: number } = { data: null, timestamp: 0 };
 const BATCH_TTL = 90_000; // 90s
+
+// Collect all sector coin IDs for batch fetch
+const _sectorCoinIds = new Set<string>();
+CRYPTO_SECTORS.forEach(sector => sector.coins.forEach(id => _sectorCoinIds.add(id)));
 
 async function fetchCryptoBatch(): Promise<CoinGeckoExtendedResponse> {
   if (_batchCache.data && Date.now() - _batchCache.timestamp < BATCH_TTL) {
     return _batchCache.data;
   }
-  // Merge crypto + watchlist IDs into a single CoinGecko call
-  const allIds = [...new Set([...CRYPTO_IDS, ...WATCHLIST_IDS])].join(',');
+  // Merge crypto + watchlist + sector IDs into a single CoinGecko call
+  const allIds = [...new Set([...CRYPTO_IDS, ...WATCHLIST_IDS, ..._sectorCoinIds])].join(',');
   const url = `/api/coingecko?ids=${allIds}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`;
   const response = await fetchWithProxy(url);
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -292,15 +292,8 @@ async function fetchStablecoinsFallback(): Promise<StablecoinData[]> {
 
 export async function fetchCryptoSectors(): Promise<CryptoSectorData[]> {
   try {
-    // Collect all unique coin IDs from sectors
-    const allIds = new Set<string>();
-    CRYPTO_SECTORS.forEach(sector => sector.coins.forEach(id => allIds.add(id)));
-    const ids = Array.from(allIds).join(',');
-
-    const url = `/api/coingecko?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
-    const response = await fetchWithProxy(url);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data: CoinGeckoResponse = await response.json();
+    // Reuse shared batch (includes sector coin IDs) — no extra API call
+    const data = await fetchCryptoBatch();
 
     return CRYPTO_SECTORS.map(sector => {
       const coins = sector.coins
@@ -342,11 +335,11 @@ export async function fetchMacroSignals(): Promise<MacroSignalResult | null> {
   }
 }
 
-// Watchlist token prices (shares batch with fetchCrypto to avoid rate limits)
-export async function fetchWatchlist(): Promise<WatchlistData[]> {
+// Unified portfolio: all tracked tokens with category info (legacy — kept for backward compat)
+export async function fetchPortfolio(): Promise<PortfolioData[]> {
   try {
     const data = await fetchCryptoBatch();
-    return Object.entries(WATCHLIST_MAP).map(([id, info]) => {
+    return Object.entries(PORTFOLIO_MAP).map(([id, info]) => {
       const coinData = data[id];
       return {
         name: info.name,
@@ -355,14 +348,98 @@ export async function fetchWatchlist(): Promise<WatchlistData[]> {
         change: coinData?.usd_24h_change ?? 0,
         marketCap: coinData?.usd_market_cap ?? undefined,
         volume: coinData?.usd_24h_vol ?? undefined,
+        category: info.category,
         conviction: info.conviction,
-        sector: info.sector,
-        tag: info.tag,
       };
     });
   } catch (e) {
-    console.error('Failed to fetch watchlist:', e);
+    console.error('Failed to fetch portfolio:', e);
     return [];
+  }
+}
+
+// Token category data with 24h, 7d, and YTD changes
+export interface TokenCategoryResult {
+  category: PortfolioCategory;
+  panelId: string;
+  tokens: TokenCategoryData[];
+}
+
+export async function fetchTokenCategories(): Promise<TokenCategoryResult[]> {
+  try {
+    const ids = Object.keys(PORTFOLIO_MAP).join(',');
+    const url = `/api/portfolio-markets?ids=${ids}`;
+    const response = await fetchWithProxy(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const coins: Array<{
+      id: string;
+      current_price: number;
+      price_change_percentage_24h: number;
+      price_change_percentage_7d_in_currency?: number;
+      market_cap: number;
+      total_volume: number;
+    }> = await response.json();
+
+    // Build lookup by CoinGecko ID
+    const coinMap = new Map(coins.map(c => [c.id, c]));
+
+    // Group by category
+    const grouped = new Map<PortfolioCategory, TokenCategoryData[]>();
+    for (const [id, info] of Object.entries(PORTFOLIO_MAP)) {
+      const coin = coinMap.get(id);
+      const token: TokenCategoryData = {
+        name: info.name,
+        symbol: info.symbol,
+        price: coin?.current_price ?? 0,
+        change24h: coin?.price_change_percentage_24h ?? 0,
+        change7d: coin?.price_change_percentage_7d_in_currency ?? null,
+        marketCap: coin?.market_cap,
+        volume: coin?.total_volume,
+        conviction: info.conviction,
+      };
+      const list = grouped.get(info.category) || [];
+      list.push(token);
+      grouped.set(info.category, list);
+    }
+
+    return PORTFOLIO_CATEGORY_ORDER
+      .filter(cat => grouped.has(cat))
+      .map(cat => ({
+        category: cat,
+        panelId: CATEGORY_PANEL_IDS[cat],
+        tokens: grouped.get(cat)!,
+      }));
+  } catch (e) {
+    console.error('Failed to fetch token categories:', e);
+    // Fallback to batch data (24h only)
+    try {
+      const data = await fetchCryptoBatch();
+      const grouped = new Map<PortfolioCategory, TokenCategoryData[]>();
+      for (const [id, info] of Object.entries(PORTFOLIO_MAP)) {
+        const coinData = data[id];
+        const token: TokenCategoryData = {
+          name: info.name,
+          symbol: info.symbol,
+          price: coinData?.usd ?? 0,
+          change24h: coinData?.usd_24h_change ?? 0,
+          change7d: null,
+          conviction: info.conviction,
+        };
+        const list = grouped.get(info.category) || [];
+        list.push(token);
+        grouped.set(info.category, list);
+      }
+      return PORTFOLIO_CATEGORY_ORDER
+        .filter(cat => grouped.has(cat))
+        .map(cat => ({
+          category: cat,
+          panelId: CATEGORY_PANEL_IDS[cat],
+          tokens: grouped.get(cat)!,
+        }));
+    } catch {
+      return [];
+    }
   }
 }
 

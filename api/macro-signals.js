@@ -57,7 +57,7 @@ async function fetchBTCHashRate() {
       currentEH: current,
       change30d,
       change7d,
-      sparkline: ehSeries.slice(-14),
+      sparkline: ehSeries.slice(-30),
     };
   } catch {
     return null;
@@ -122,6 +122,62 @@ function calcVWAP(closes, volumes) {
   return sumV > 0 ? sumPV / sumV : closes[closes.length - 1];
 }
 
+/**
+ * Calculate RSI (Relative Strength Index) for a given period.
+ * Returns the current RSI value (0-100).
+ * Uses Wilder's smoothing method (exponential moving average of gains/losses).
+ */
+function calcRSI(closes, period = 14) {
+  if (closes.length < period + 1) return 50; // default neutral if insufficient data
+
+  // Calculate price changes
+  const changes = [];
+  for (let i = 1; i < closes.length; i++) {
+    changes.push(closes[i] - closes[i - 1]);
+  }
+
+  // Initial average gain/loss over first `period` changes
+  let avgGain = 0;
+  let avgLoss = 0;
+  for (let i = 0; i < period; i++) {
+    if (changes[i] > 0) avgGain += changes[i];
+    else avgLoss += Math.abs(changes[i]);
+  }
+  avgGain /= period;
+  avgLoss /= period;
+
+  // Wilder's smoothing for remaining changes
+  for (let i = period; i < changes.length; i++) {
+    const gain = changes[i] > 0 ? changes[i] : 0;
+    const loss = changes[i] < 0 ? Math.abs(changes[i]) : 0;
+    avgGain = (avgGain * (period - 1) + gain) / period;
+    avgLoss = (avgLoss * (period - 1) + loss) / period;
+  }
+
+  if (avgLoss === 0) return 100;
+  const rs = avgGain / avgLoss;
+  return 100 - (100 / (1 + rs));
+}
+
+/**
+ * Calculate rolling RSI values over a window of days.
+ * Returns an array of RSI values, one per day in the window.
+ * Each RSI is computed using all closes up to that point.
+ */
+function calcRollingRSI(closes, period = 14, window = 30) {
+  const rsiValues = [];
+  // We need at least period+1 closes to compute a single RSI value
+  const minLen = period + 1;
+  const startIdx = Math.max(minLen, closes.length - window);
+
+  for (let i = startIdx; i <= closes.length; i++) {
+    const slice = closes.slice(0, i);
+    rsiValues.push(calcRSI(slice, period));
+  }
+
+  return rsiValues;
+}
+
 function computeSignals(quotes, hashRateData, fearGreedData) {
   const jpy = quotes['JPY=X'];
   const btc = quotes['BTC-USD'];
@@ -140,7 +196,7 @@ function computeSignals(quotes, hashRateData, fearGreedData) {
       status: isSqueezing ? 'bearish' : 'bullish',
       value: `JPY 30d ROC: ${jpyROC.toFixed(2)}%`,
       detail: isSqueezing ? 'Yen strengthening → carry trade unwind risk' : 'Yen stable → no liquidity headwind',
-      sparkline: jpy.closes.slice(-14),
+      sparkline: jpy.closes.slice(-30),
       supportingData: {
         'JPY/USD': `${jpy.price?.toFixed(2)}`,
         '30d ROC': `${jpyROC.toFixed(2)}%`,
@@ -160,7 +216,7 @@ function computeSignals(quotes, hashRateData, fearGreedData) {
       status: isGap ? 'bearish' : 'bullish',
       value: `BTC 1w: ${btcReturn.toFixed(1)}% | QQQ 1w: ${qqqReturn.toFixed(1)}%`,
       detail: isGap ? 'Stocks holding, BTC flushing → risk of further downside' : 'BTC & stocks moving together',
-      sparkline: btc.closes.slice(-14),
+      sparkline: btc.closes.slice(-30),
       supportingData: {
         'BTC 1w': `${btcReturn.toFixed(1)}%`,
         'QQQ 1w': `${qqqReturn.toFixed(1)}%`,
@@ -188,7 +244,7 @@ function computeSignals(quotes, hashRateData, fearGreedData) {
       status: isRiskOn ? 'bullish' : 'bearish',
       value: `QQQ/XLP 20d ROC: ${ratioROC.toFixed(2)}%`,
       detail: isRiskOn ? 'Growth outperforming defensives' : 'Defensives outperforming growth',
-      sparkline: ratios.slice(-14),
+      sparkline: ratios.slice(-30),
       supportingData: {
         'QQQ': `$${qqq.price?.toFixed(2)}`,
         'XLP': `$${xlp.price?.toFixed(2)}`,
@@ -198,26 +254,47 @@ function computeSignals(quotes, hashRateData, fearGreedData) {
     });
   }
 
-  // Signal 4: Technical Trend (BTC vs 50 SMA + VWAP)
+  // Signal 4: Momentum (RSI + Mayer Multiple)
   if (btc) {
     const price = btc.price;
-    const sma50 = calcSMA(btc.closes, 50);
-    const vwap = calcVWAP(btc.closes, btc.volumes);
-    const isBullish = price > sma50 && price > vwap;
-    const isBearish = price < sma50;
+    const rsi = calcRSI(btc.closes, 14);
+    const sma200 = calcSMA(btc.closes, 200);
+    const mayerMultiple = sma200 > 0 ? price / sma200 : 1;
+    const priceChange30d = calcROC(btc.closes, 30);
+    const rsiSparkline = calcRollingRSI(btc.closes, 14, 30);
+
+    const isOverbought = rsi > 70;
+    const isOversold = rsi < 30;
+
+    // Contrarian logic: oversold = bullish (buy opportunity), overbought = bearish (overextended)
+    const label = isOverbought ? 'OVERBOUGHT' : isOversold ? 'OVERSOLD' : 'NEUTRAL';
+    const status = isOversold ? 'bullish' : isOverbought ? 'bearish' : 'neutral';
+
+    let detail;
+    if (isOversold) {
+      detail = `RSI ${rsi.toFixed(0)} oversold → contrarian buy signal. Mayer ${mayerMultiple.toFixed(2)}`;
+    } else if (isOverbought) {
+      detail = `RSI ${rsi.toFixed(0)} overbought → momentum overextended. Mayer ${mayerMultiple.toFixed(2)}`;
+    } else if (rsi >= 55) {
+      detail = `RSI ${rsi.toFixed(0)} tilting bullish. Mayer Multiple ${mayerMultiple.toFixed(2)}`;
+    } else if (rsi <= 45) {
+      detail = `RSI ${rsi.toFixed(0)} tilting bearish. Mayer Multiple ${mayerMultiple.toFixed(2)}`;
+    } else {
+      detail = `RSI ${rsi.toFixed(0)} neutral zone. Mayer Multiple ${mayerMultiple.toFixed(2)}`;
+    }
+
     signals.push({
-      name: 'Technical Trend',
-      label: isBullish ? 'BULLISH' : isBearish ? 'BEARISH' : 'NEUTRAL',
-      status: isBullish ? 'bullish' : isBearish ? 'bearish' : 'neutral',
-      value: `BTC: $${price?.toLocaleString()} | SMA50: $${Math.round(sma50).toLocaleString()}`,
-      detail: isBullish ? 'Price above 50 SMA & VWAP' : isBearish ? 'Price below 50 SMA' : 'Mixed signals',
-      sparkline: btc.closes.slice(-14),
+      name: 'Momentum',
+      label,
+      status,
+      value: `RSI: ${rsi.toFixed(1)} | Mayer: ${mayerMultiple.toFixed(2)}`,
+      detail,
+      sparkline: rsiSparkline,
       supportingData: {
-        'BTC': `$${price?.toLocaleString()}`,
-        'SMA50': `$${Math.round(sma50).toLocaleString()}`,
-        'SMA200': `$${Math.round(calcSMA(btc.closes, 200)).toLocaleString()}`,
-        'Mayer': calcSMA(btc.closes, 200) > 0 ? (price / calcSMA(btc.closes, 200)).toFixed(2) : 'N/A',
-        'VWAP': `$${Math.round(vwap).toLocaleString()}`,
+        'RSI(14)': rsi.toFixed(1),
+        'Mayer': mayerMultiple.toFixed(2),
+        'SMA200': `$${Math.round(sma200).toLocaleString()}`,
+        '30d Chg': `${priceChange30d >= 0 ? '+' : ''}${priceChange30d.toFixed(1)}%`,
       },
     });
   }

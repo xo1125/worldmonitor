@@ -10,6 +10,7 @@ interface ETFData {
   volume: number | null;
   cumNetInflow?: number | null;
   fee?: number | null;
+  change?: number | null;
 }
 
 interface ETFFlowsResult {
@@ -27,13 +28,13 @@ interface ETFFlowsResult {
 
 export class ETFFlowsPanel extends Panel {
   constructor() {
-    super({ id: 'etf-flows', title: 'BTC ETF Tracker' });
+    super({ id: 'etf-flows', title: 'BTC ETF' });
   }
 
   private formatUSD(val: number): string {
     const abs = Math.abs(val);
     if (abs >= 1e9) return `$${(abs / 1e9).toFixed(1)}B`;
-    if (abs >= 1e6) return `$${(abs / 1e6).toFixed(0)}M`;
+    if (abs >= 1e6) return `$${(abs / 1e6).toFixed(1)}M`;
     if (abs >= 1e3) return `$${(abs / 1e3).toFixed(0)}K`;
     return `$${abs.toFixed(0)}`;
   }
@@ -43,6 +44,14 @@ export class ETFFlowsPanel extends Panel {
     return `${sign}${this.formatUSD(flow)}`;
   }
 
+  private formatVolShort(val: number): string {
+    const abs = Math.abs(val);
+    if (abs >= 1e9) return `$${(abs / 1e9).toFixed(1)}B`;
+    if (abs >= 1e6) return `$${(abs / 1e6).toFixed(1)}M`;
+    if (abs >= 1e3) return `$${(abs / 1e3).toFixed(0)}K`;
+    return `$${abs.toFixed(0)}`;
+  }
+
   public renderFlows(data: ETFFlowsResult): void {
     if (!data.etfs || data.etfs.length === 0) {
       this.showError('No ETF data available');
@@ -50,7 +59,12 @@ export class ETFFlowsPanel extends Panel {
     }
 
     const isEstimated = data.source !== 'sosovalue';
-    const flowClass = data.aggregate.dailyNetInflow >= 0 ? 'etf-positive' : 'etf-negative';
+    const netFlow = data.aggregate.dailyNetInflow;
+    const flowClass = netFlow >= 0 ? 'etf-positive' : 'etf-negative';
+    const netLabel = netFlow >= 0 ? 'NET INFLOW' : 'NET OUTFLOW';
+
+    // 5th column: AUM if SoSoValue, Change if Yahoo fallback
+    const fifthColHeader = isEstimated ? 'Change' : 'AUM';
 
     const rows = data.etfs
       .filter((e) => e.dailyNetInflow !== null)
@@ -59,14 +73,24 @@ export class ETFFlowsPanel extends Panel {
         const flow = etf.dailyNetInflow ?? 0;
         const etfFlowClass = flow >= 0 ? 'etf-positive' : 'etf-negative';
         const flowStr = this.formatFlow(flow);
-        const aum = etf.netAssets ? this.formatUSD(etf.netAssets) : '--';
+        const vol = etf.volume ? this.formatVolShort(etf.volume) : '--';
+
+        let fifthCol: string;
+        if (isEstimated) {
+          fifthCol = etf.change != null
+            ? `<span class="${etf.change >= 0 ? 'etf-positive' : 'etf-negative'}">${etf.change >= 0 ? '+' : ''}${etf.change.toFixed(2)}%</span>`
+            : '--';
+        } else {
+          fifthCol = etf.netAssets ? this.formatUSD(etf.netAssets) : '--';
+        }
 
         return `
           <tr class="etf-row">
             <td class="etf-ticker">${escapeHtml(etf.ticker)}</td>
             <td class="etf-issuer">${escapeHtml(etf.issuer)}</td>
             <td class="etf-flow ${etfFlowClass}">${flowStr}</td>
-            <td class="etf-vol">${aum}</td>
+            <td class="etf-vol">${vol}</td>
+            <td class="etf-aum">${fifthCol}</td>
           </tr>
         `;
       })
@@ -85,25 +109,26 @@ export class ETFFlowsPanel extends Panel {
       <div class="etf-flows-container">
         <div class="etf-aggregate">
           <div class="etf-agg-item">
-            <span class="etf-agg-label">${sourceLabel}Daily Net Flow</span>
-            <span class="etf-agg-value ${flowClass}">${this.formatFlow(data.aggregate.dailyNetInflow)}</span>
+            <span class="etf-agg-label">Net Flow</span>
+            <span class="etf-net-label ${flowClass}">${netLabel}</span>
           </div>
           <div class="etf-agg-item">
-            <span class="etf-agg-label">Total AUM</span>
-            <span class="etf-agg-value">${data.aggregate.totalNetAssets ? this.formatUSD(data.aggregate.totalNetAssets) : '--'}</span>
+            <span class="etf-agg-label">${sourceLabel}Flow</span>
+            <span class="etf-agg-value ${flowClass}">${this.formatUSD(Math.abs(netFlow))}</span>
           </div>
           <div class="etf-agg-item">
-            <span class="etf-agg-label">Volume</span>
-            <span class="etf-agg-value">${data.aggregate.totalVolume ? this.formatUSD(data.aggregate.totalVolume) : '--'}</span>
+            <span class="etf-agg-label">Total Vol</span>
+            <span class="etf-agg-value">${data.aggregate.totalVolume ? this.formatVolShort(data.aggregate.totalVolume) : '--'}</span>
           </div>
         </div>
         <table class="etf-table">
           <thead>
             <tr>
-              <th>ETF</th>
+              <th>Ticker</th>
               <th>Issuer</th>
               <th>${sourceLabel}Flow</th>
-              <th>AUM</th>
+              <th>Volume</th>
+              <th>${fifthColHeader}</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>

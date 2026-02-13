@@ -16,12 +16,12 @@ export const SECTORS: Sector[] = [
 ];
 
 export const COMMODITIES: Commodity[] = [
+  { symbol: 'DX-Y.NYB', name: 'Dollar Index', display: 'DXY' },
   { symbol: '^VIX', name: 'VIX', display: 'VIX' },
   { symbol: 'GC=F', name: 'Gold', display: 'GOLD' },
   { symbol: 'CL=F', name: 'Crude Oil', display: 'OIL' },
   { symbol: 'NG=F', name: 'Natural Gas', display: 'NATGAS' },
   { symbol: 'SI=F', name: 'Silver', display: 'SILVER' },
-  { symbol: 'HG=F', name: 'Copper', display: 'COPPER' },
 ];
 
 export const MARKET_SYMBOLS: MarketSymbol[] = [
@@ -55,17 +55,61 @@ export const MARKET_SYMBOLS: MarketSymbol[] = [
   { symbol: 'BAC', name: 'BofA', display: 'BAC' },
 ];
 
-export const CRYPTO_MAP: Record<string, { name: string; symbol: string }> = {
-  bitcoin: { name: 'Bitcoin', symbol: 'BTC' },
-  ethereum: { name: 'Ethereum', symbol: 'ETH' },
-  solana: { name: 'Solana', symbol: 'SOL' },
-  bittensor: { name: 'Bittensor', symbol: 'TAO' },
-  'aerodrome-finance': { name: 'Aerodrome', symbol: 'AERO' },
-  zama: { name: 'Zama', symbol: 'ZAMA' },
-};
-export const CRYPTO_IDS = Object.keys(CRYPTO_MAP);
+// Unified portfolio: all tracked tokens with category + conviction
+export type PortfolioCategory = 'Bluechips' | 'DeFi' | 'AI' | 'Other';
 
-// Stablecoin tracking (used by crypto variant)
+export interface PortfolioTokenConfig {
+  name: string;
+  symbol: string;
+  category: PortfolioCategory;
+  conviction?: 'high' | 'low';
+}
+
+export const PORTFOLIO_MAP: Record<string, PortfolioTokenConfig> = {
+  // Bluechips
+  bitcoin:    { name: 'Bitcoin',      symbol: 'BTC',    category: 'Bluechips' },
+  ethereum:   { name: 'Ethereum',     symbol: 'ETH',    category: 'Bluechips' },
+  solana:     { name: 'Solana',       symbol: 'SOL',    category: 'Bluechips' },
+  // DeFi
+  aave:       { name: 'Aave',         symbol: 'AAVE',   category: 'DeFi' },
+  'aerodrome-finance': { name: 'Aerodrome', symbol: 'AERO', category: 'DeFi' },
+  lighter:    { name: 'Lighter',      symbol: 'LIT',    category: 'DeFi', conviction: 'high' },
+  hyperliquid: { name: 'Hyperliquid', symbol: 'HYPE',   category: 'DeFi', conviction: 'high' },
+  'canton-network': { name: 'Canton', symbol: 'CC',     category: 'DeFi', conviction: 'low' },
+  sky:        { name: 'Sky',          symbol: 'SKY',    category: 'DeFi', conviction: 'low' },
+  'jupiter-exchange-solana': { name: 'Jupiter', symbol: 'JUP', category: 'DeFi', conviction: 'low' },
+  // AI
+  bittensor:  { name: 'Bittensor',    symbol: 'TAO',    category: 'AI' },
+  diem:       { name: 'Diem',         symbol: 'DIEM',   category: 'AI' },
+  daydreams:  { name: 'Daydreams',    symbol: 'DREAMS', category: 'AI', conviction: 'high' },
+  // Other
+  fogo:       { name: 'Fogo',         symbol: 'FOGO',   category: 'Other', conviction: 'low' },
+  brevis:     { name: 'Brevis',       symbol: 'BREV',   category: 'Other', conviction: 'high' },
+  'meta-2-2': { name: 'Meta',         symbol: 'META',   category: 'Other', conviction: 'low' },
+  zama:       { name: 'Zama',         symbol: 'ZAMA',   category: 'Other' },
+};
+export const PORTFOLIO_IDS = Object.keys(PORTFOLIO_MAP);
+
+// Category display order and panel IDs
+export const PORTFOLIO_CATEGORY_ORDER: PortfolioCategory[] = ['Bluechips', 'DeFi', 'AI', 'Other'];
+
+// Map category to panel ID
+export const CATEGORY_PANEL_IDS: Record<PortfolioCategory, string> = {
+  Bluechips: 'tokens-bluechips',
+  DeFi: 'tokens-defi',
+  AI: 'tokens-ai',
+  Other: 'tokens-other',
+};
+
+// Legacy aliases (keep backward compat for batch fetch, heatmap, etc.)
+export const CRYPTO_MAP: Record<string, { name: string; symbol: string }> = Object.fromEntries(
+  Object.entries(PORTFOLIO_MAP).map(([id, cfg]) => [id, { name: cfg.name, symbol: cfg.symbol }])
+);
+export const CRYPTO_IDS = PORTFOLIO_IDS;
+export const WATCHLIST_MAP = PORTFOLIO_MAP;
+export const WATCHLIST_IDS = PORTFOLIO_IDS;
+
+// Stablecoin tracking
 export const STABLECOIN_IDS = ['tether', 'usd-coin', 'dai', 'first-digital-usd', 'ethena-usde'] as const;
 export const STABLECOIN_MAP: Record<string, { name: string; symbol: string }> = {
   tether: { name: 'Tether', symbol: 'USDT' },
@@ -75,7 +119,7 @@ export const STABLECOIN_MAP: Record<string, { name: string; symbol: string }> = 
   'ethena-usde': { name: 'USDe', symbol: 'USDe' },
 };
 
-// Crypto sector definitions for heatmap (used by crypto variant)
+// Crypto sector definitions for heatmap
 export interface CryptoSector {
   name: string;
   coins: string[]; // CoinGecko IDs
@@ -91,30 +135,6 @@ export const CRYPTO_SECTORS: CryptoSector[] = [
   { name: 'Privacy', coins: ['monero', 'zcash'] },
   { name: 'Infrastructure', coins: ['chainlink', 'the-graph', 'filecoin', 'helium'] },
 ];
-
-// Watchlist tokens (fund-specific, used by crypto variant)
-export interface WatchlistTokenConfig {
-  name: string;
-  symbol: string;
-  conviction: 'high' | 'low';
-  sector: string;
-  tag?: string;
-}
-
-export const WATCHLIST_MAP: Record<string, WatchlistTokenConfig> = {
-  // High Conviction
-  brevis: { name: 'Brevis', symbol: 'BREV', conviction: 'high', sector: 'ZK/Infra' },
-  daydreams: { name: 'Daydreams', symbol: 'DREAMS', conviction: 'high', sector: 'AI/Agents' },
-  lighter: { name: 'Lighter', symbol: 'LIT', conviction: 'high', sector: 'DeFi/Perps' },
-  hyperliquid: { name: 'Hyperliquid', symbol: 'HYPE', conviction: 'high', sector: 'DeFi/Perps' },
-  // Low Conviction
-  sky: { name: 'Sky', symbol: 'SKY', conviction: 'low', sector: 'DeFi' },
-  'meta-2-2': { name: 'Meta', symbol: 'META', conviction: 'low', sector: 'DeFi' },
-  fogo: { name: 'Fogo', symbol: 'FOGO', conviction: 'low', sector: 'L1' },
-  canton: { name: 'Canton', symbol: 'CC', conviction: 'low', sector: 'Enterprise' },
-  'jupiter-exchange-solana': { name: 'Jupiter', symbol: 'JUP', conviction: 'low', sector: 'DeFi/DEX' },
-};
-export const WATCHLIST_IDS = Object.keys(WATCHLIST_MAP);
 
 // TAO Subnet definitions (static config, live data from API)
 export interface TaoSubnetConfig {

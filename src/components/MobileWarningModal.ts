@@ -9,12 +9,12 @@ export class MobileWarningModal {
     this.element.innerHTML = `
       <div class="mobile-warning-modal">
         <div class="mobile-warning-header">
-          <span class="mobile-warning-icon">📱</span>
+          <span class="mobile-warning-icon">📊</span>
           <span class="mobile-warning-title">Mobile View</span>
         </div>
         <div class="mobile-warning-content">
-          <p>You're viewing a simplified mobile version focused on MENA region with essential layers enabled.</p>
-          <p>Tip: Use the view buttons (GLOBAL/US/MENA) to switch regions. Tap markers to see details.</p>
+          <p>FC Monitor is optimized for desktop. On mobile, panels stack vertically and some details are simplified.</p>
+          <p>Tip: Scroll down to see all panels. Tap signal cards to open charts on TradingView.</p>
         </div>
         <div class="mobile-warning-footer">
           <label class="mobile-warning-remember">

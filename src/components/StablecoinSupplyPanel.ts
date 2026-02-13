@@ -45,18 +45,18 @@ export class StablecoinSupplyPanel extends Panel {
       .map(coin => {
         // Use server pegStatus if available, otherwise compute locally
         const pegStatus = coin.pegStatus ?? this.computePegStatus(coin.price);
-        const pegClass = pegStatus === 'ON_PEG' ? 'peg-stable' : pegStatus === 'SLIGHT_DEPEG' ? 'peg-warning' : 'peg-danger';
-        const mcapChangeClass = coin.mcapChange24h >= 0 ? 'supply-change-up' : 'supply-change-down';
-        const mcapChangeStr = coin.mcapChange24h !== 0
-          ? formatChange(coin.mcapChange24h)
-          : '--';
+        const pegDeviation = coin.pegDeviation ?? Math.abs(coin.price - 1.0) * 100;
+        const pegBadgeClass = pegStatus === 'ON_PEG' ? 'peg-badge-ok' : pegStatus === 'SLIGHT_DEPEG' ? 'peg-badge-caution' : 'peg-badge-danger';
+        const pegBadgeText = pegStatus === 'ON_PEG' ? 'ON PEG' : pegStatus === 'SLIGHT_DEPEG' ? 'SLIGHT' : 'DEPEG';
+        const volStr = coin.volume24h ? formatB(coin.volume24h) : '--';
 
         return `
           <div class="supply-row">
             <span class="supply-symbol">${coin.symbol}</span>
+            <span class="supply-price">$${coin.price.toFixed(4)}</span>
+            <span class="supply-peg-cell"><span class="peg-badge ${pegBadgeClass}">${pegBadgeText}</span> <span class="peg-deviation">${pegDeviation.toFixed(2)}%</span></span>
             <span class="supply-mcap">${formatB(coin.marketCap)}</span>
-            <span class="supply-change ${mcapChangeClass}">${mcapChangeStr}</span>
-            <span class="supply-peg ${pegClass}">$${coin.price.toFixed(4)}</span>
+            <span class="supply-vol">${volStr}</span>
           </div>
         `;
       })
@@ -81,9 +81,10 @@ export class StablecoinSupplyPanel extends Panel {
         <div class="supply-breakdown">
           <div class="supply-header-row">
             <span>Token</span>
-            <span>Supply</span>
-            <span>24h Change</span>
+            <span>Price</span>
             <span>Peg</span>
+            <span>Supply</span>
+            <span>24h Vol</span>
           </div>
           ${breakdown}
         </div>

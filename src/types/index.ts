@@ -137,7 +137,7 @@ export interface MacroSignalResult {
   lastUpdated: Date;
 }
 
-// Watchlist token data
+// Watchlist token data (legacy — kept for backward compat)
 export interface WatchlistData {
   name: string;
   symbol: string;
@@ -148,6 +148,18 @@ export interface WatchlistData {
   conviction: 'high' | 'low';
   sector: string;
   tag?: string;
+}
+
+// Unified portfolio data (replaces separate CryptoData + WatchlistData in UI)
+export interface PortfolioData {
+  name: string;
+  symbol: string;
+  price: number;
+  change: number;
+  marketCap?: number;
+  volume?: number;
+  category: import('@/config/markets').PortfolioCategory;
+  conviction?: 'high' | 'low';
 }
 
 // TAO Subnet data

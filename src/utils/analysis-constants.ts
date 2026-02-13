@@ -117,9 +117,7 @@ export type SignalType =
   | 'flow_price_divergence'
   | 'geo_convergence'
   | 'explained_market_move'
-  | 'hotspot_escalation'
-  | 'sector_cascade'
-  | 'military_surge';
+  | 'sector_cascade';
 
 export interface SignalContext {
   whyItMatters: string;
@@ -178,20 +176,10 @@ export const SIGNAL_CONTEXT: Record<SignalType, SignalContext> = {
     actionableInsight: 'Understand the narrative driving the move; assess if reaction is proportional.',
     confidenceNote: 'High confidence—news and price action are correlated.',
   },
-  hotspot_escalation: {
-    whyItMatters: 'Geopolitical hotspot showing significant escalation based on news activity, country instability, geographic convergence, and military presence.',
-    actionableInsight: 'Increase monitoring priority; assess downstream impacts on infrastructure, markets, and regional stability.',
-    confidenceNote: 'Confidence weighted by multiple data sources—news (35%), country instability (25%), geo-convergence (25%), military activity (15%).',
-  },
   sector_cascade: {
     whyItMatters: 'Market movement is cascading across related sectors—indicates systemic reaction to a catalyzing event.',
     actionableInsight: 'Identify the primary catalyst; assess exposure across correlated assets.',
     confidenceNote: 'Higher confidence when multiple sectors move with similar velocity and direction.',
-  },
-  military_surge: {
-    whyItMatters: 'Military transport activity significantly above baseline—indicates potential deployment, humanitarian operation, or force projection.',
-    actionableInsight: 'Correlate with regional news; assess nearby base activity and naval movements.',
-    confidenceNote: 'Higher confidence with sustained activity over multiple hours and diverse aircraft types.',
   },
 };
 

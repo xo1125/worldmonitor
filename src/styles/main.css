@@ -6496,6 +6496,20 @@ a.prediction-link:hover {
 
 /* Touch device detection - applies to both small screens and touch devices */
 @media (pointer: coarse), (max-width: 768px) {
+  /* === Enable scrolling on mobile === */
+  html, body {
+    overflow: auto !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+  }
+
+  #app {
+    height: auto !important;
+    min-height: 100vh;
+    overflow: visible !important;
+    position: relative !important;
+  }
+
   /* Expand touch targets for all map markers using ::before pseudo-element */
   /* This creates an invisible touch area around small markers */
 
@@ -6586,21 +6600,26 @@ a.prediction-link:hover {
   .panels-grid {
     display: flex !important;
     flex-direction: column;
-    gap: 8px;
-    padding: 8px;
+    gap: 6px;
+    padding: 6px;
+    overflow: visible !important;
   }
 
   .panel {
     width: 100% !important;
-    min-height: 300px;
-    max-height: 400px;
+    min-height: unset !important;
+    max-height: none !important;
+    height: auto !important;
   }
 
-  /* Make map section smaller on mobile to show panels */
+  .panel-content {
+    overflow: visible !important;
+    flex: none !important;
+  }
+
+  /* Hide map section on mobile (crypto variant doesn't use it) */
   .map-section {
-    height: 40vh !important;
-    min-height: 250px !important;
-    max-height: 50vh !important;
+    display: none !important;
   }
 
   /* Hide pin button and resize handles on mobile */
@@ -6696,6 +6715,34 @@ a.prediction-link:hover {
     cursor: pointer;
     pointer-events: auto;
   }
+
+  /* === Signal card panels: auto-size on mobile === */
+  .panel:has(.signal-card-solo) {
+    min-height: unset !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+
+  /* News/feed panels: cap at reasonable height with scroll */
+  .panel:has(.news-feed),
+  .panel:has(.live-news-player),
+  .panel:has(.feed-container) {
+    max-height: 500px !important;
+    overflow: hidden !important;
+  }
+
+  .panel:has(.news-feed) .panel-content,
+  .panel:has(.live-news-player) .panel-content,
+  .panel:has(.feed-container) .panel-content {
+    overflow-y: auto !important;
+    flex: 1 !important;
+  }
+
+  /* Signal cards grid: 2 columns on tablets/large phones */
+  .macro-signals-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
 }
 
 /* Extra small screens */
@@ -6722,28 +6769,79 @@ a.prediction-link:hover {
     max-width: none;
   }
 
-  /* Stack header on very small screens */
+  /* Header: auto height, logo+title left, status toggle right */
   .header {
-    flex-wrap: wrap;
-    padding: 8px;
+    flex-wrap: nowrap;
+    padding: 6px 10px;
+    height: auto !important;
+    gap: 8px;
   }
 
-  .header-left,
-  .header-center,
-  .header-right {
-    flex-basis: 100%;
-    justify-content: center;
+  .header-left {
+    flex: 1;
+    flex-basis: auto;
+    justify-content: flex-start;
+    gap: 6px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .logo {
+    font-size: 11px;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  .version {
+    display: none;
   }
 
   .header-center {
-    order: -1;
-    margin-bottom: 8px;
+    display: none;
+  }
+
+  .header-right {
+    flex: 0 0 auto;
+    flex-basis: auto;
+    justify-content: flex-end;
+    gap: 6px;
   }
 
   /* Hide non-essential header items */
   .copy-link-btn,
   .time-display {
     display: none;
+  }
+
+  /* Panels: tighter padding on small screens */
+  .panels-grid {
+    padding: 4px !important;
+    gap: 4px !important;
+  }
+
+  /* Signal cards: single column on very small screens */
+  .macro-signals-grid {
+    grid-template-columns: 1fr !important;
+    gap: 4px;
+  }
+
+  /* BTC monitor compact */
+  .btc-gauges-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .btc-regime-price {
+    font-size: 16px;
+  }
+
+  /* Compact signal card padding */
+  .signal-card-solo {
+    padding: 6px;
+  }
+
+  .macro-signal-card {
+    padding: 8px;
   }
 }
 
@@ -11681,6 +11779,229 @@ body.has-critical-banner .panels-grid {
 }
 
 /* ============================================
+   PORTFOLIO PANEL — Category-grouped tokens
+   ============================================ */
+.pf-container {
+  padding: 4px 8px;
+}
+
+.pf-header-row {
+  display: grid;
+  grid-template-columns: 62px 75px 60px 55px;
+  gap: 4px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+}
+
+.pf-sort {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s;
+}
+
+.pf-sort:hover {
+  color: var(--text);
+}
+
+.pf-category-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-dim);
+  padding: 8px 0 3px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pf-cat-name {
+  color: var(--text-dim);
+}
+
+.pf-cat-avg {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.pf-row {
+  display: grid;
+  grid-template-columns: 62px 75px 60px 55px;
+  gap: 4px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  align-items: center;
+  transition: background 0.15s;
+}
+
+.pf-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.pf-row:last-child {
+  border-bottom: none;
+}
+
+.pf-symbol {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pf-conviction {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pf-conv-high {
+  background: #44ff88;
+}
+
+.pf-conv-low {
+  background: #ffaa33;
+}
+
+.pf-price {
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+  text-align: right;
+}
+
+.pf-mcap {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-dim);
+  text-align: right;
+}
+
+.pf-change {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  text-align: right;
+}
+
+.pf-up { color: #44ff88; }
+.pf-down { color: #ff4444; }
+.pf-flat { color: var(--text-dim); }
+
+/* ============================================
+   TOKEN CATEGORY PANELS — Bluechips, DeFi, AI, Other
+   ============================================ */
+.tc-container {
+  padding: 4px 8px;
+}
+
+.tc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.tc-table thead th {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  padding: 5px 6px 7px;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+}
+
+.tc-table thead th:first-child {
+  text-align: left;
+}
+
+.tc-row {
+  transition: background 0.15s;
+}
+
+.tc-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.tc-row td {
+  padding: 6px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.tc-row:last-child td {
+  border-bottom: none;
+}
+
+.tc-token {
+  font-weight: 700;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+.tc-conv {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tc-conv-high {
+  background: #44ff88;
+}
+
+.tc-conv-low {
+  background: #ffaa33;
+}
+
+.tc-price {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text);
+  text-align: right;
+}
+
+.tc-chg {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* Bluechips panel — fewer rows, so allow more spacious layout */
+#tokens-bluechips .tc-row td {
+  padding: 8px 6px;
+}
+#tokens-bluechips .tc-token {
+  font-size: 13px;
+}
+#tokens-bluechips .tc-price {
+  font-size: 13px;
+}
+#tokens-bluechips .tc-chg {
+  font-size: 12px;
+}
+
+.tc-up { color: #44ff88; }
+.tc-down { color: #ff4444; }
+.tc-flat { color: var(--text-dim); }
+.tc-na { color: var(--text-dim); opacity: 0.5; }
+
+/* ============================================
    TAO SUBNETS PANEL — Compact Card Grid
    ============================================ */
 .tao-subnets-grid {
@@ -11924,11 +12245,12 @@ body.has-critical-banner .panels-grid {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  padding: 6px 10px;
   background: var(--bg-card, #1a1a2e);
   border-radius: 6px;
   border: 1px solid var(--border-dim, #333);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  gap: 8px;
 }
 
 .supply-total-compact {
@@ -11945,7 +12267,7 @@ body.has-critical-banner .panels-grid {
 }
 
 .supply-total-num {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   font-family: 'JetBrains Mono', monospace;
   color: var(--text);
@@ -11965,9 +12287,10 @@ body.has-critical-banner .panels-grid {
 }
 
 .supply-flow-value {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
   font-family: 'JetBrains Mono', monospace;
+  white-space: nowrap;
 }
 
 .supply-inflow .supply-flow-value { color: #4ade80; }
@@ -11982,11 +12305,11 @@ body.has-critical-banner .panels-grid {
 
 .supply-header-row {
   display: grid;
-  grid-template-columns: 55px 1fr 80px 70px;
+  grid-template-columns: 48px 62px 88px 64px 60px;
   gap: 4px;
   padding: 4px 0;
   border-bottom: 1px solid var(--border);
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -11995,11 +12318,56 @@ body.has-critical-banner .panels-grid {
 
 .supply-row {
   display: grid;
-  grid-template-columns: 55px 1fr 80px 70px;
+  grid-template-columns: 48px 62px 88px 64px 60px;
   gap: 4px;
-  padding: 5px 0;
+  padding: 4px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   align-items: center;
+}
+
+.supply-vol-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.supply-price {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+}
+
+.supply-peg-cell {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+}
+
+.peg-badge {
+  font-size: 7px;
+  font-weight: 700;
+  padding: 1px 3px;
+  border-radius: 2px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.peg-badge.peg-badge-ok { background: rgba(68, 255, 136, 0.15); color: #44ff88; }
+.peg-badge.peg-badge-caution { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+.peg-badge.peg-badge-danger { background: rgba(255, 68, 68, 0.2); color: #ff4444; }
+
+.peg-deviation {
+  font-size: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-dim);
+}
+
+.supply-vol {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-secondary, #bbb);
+  text-align: right;
 }
 
 .supply-change {
@@ -12113,8 +12481,27 @@ body.has-critical-banner .panels-grid {
 }
 
 .etf-table thead th:nth-child(3),
-.etf-table thead th:nth-child(4) {
+.etf-table thead th:nth-child(4),
+.etf-table thead th:nth-child(5) {
   text-align: right;
+}
+
+.etf-net-label {
+  font-size: 10px;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.etf-net-label.etf-positive { color: #4ade80; }
+.etf-net-label.etf-negative { color: #f87171; }
+
+.etf-up-count { color: #4ade80; font-weight: 600; }
+.etf-down-count { color: #f87171; font-weight: 600; }
+
+.etf-aum {
+  text-align: right;
+  color: var(--text-secondary, #bbb);
 }
 
 .etf-row {
@@ -12182,41 +12569,50 @@ body.has-critical-banner .panels-grid {
   padding: 0;
 }
 
-/* Regime Banner */
-.btc-regime-banner {
-  padding: 16px 20px;
-  border-left: 3px solid;
-  margin: 0 0 2px;
-}
-
-.btc-regime-top {
+/* Regime Row (compact) */
+.btc-regime-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 6px;
+  justify-content: space-between;
+  padding: 8px 16px 4px;
 }
 
-.btc-regime-label {
-  font-size: 11px;
+.btc-regime-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btc-regime-right {
+  display: flex;
+  align-items: center;
+}
+
+.btc-regime-tag {
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
   text-transform: uppercase;
   font-family: 'JetBrains Mono', monospace;
+  padding: 2px 8px;
+  border: 1px solid;
+  border-radius: 3px;
 }
 
 .btc-regime-price {
-  font-size: 28px;
+  font-size: 18px;
   font-weight: 700;
   color: #fff;
   font-family: 'JetBrains Mono', monospace;
   letter-spacing: -0.5px;
-  margin-bottom: 4px;
 }
 
 .btc-regime-desc {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
-  line-height: 1.4;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  line-height: 1.3;
+  padding: 0 16px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .btc-dead-cat-badge {
@@ -12234,9 +12630,9 @@ body.has-critical-banner .panels-grid {
 /* Gauges Row */
 .btc-gauges-row {
   display: grid;
-  grid-template-columns: 140px 1fr;
+  grid-template-columns: 120px 1fr;
   gap: 0;
-  padding: 12px 16px;
+  padding: 8px 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
@@ -12362,7 +12758,7 @@ body.has-critical-banner .panels-grid {
 
 /* Levels Table */
 .btc-levels-section {
-  padding: 8px 0;
+  padding: 4px 0;
 }
 
 .btc-levels-table {
@@ -12372,7 +12768,7 @@ body.has-critical-banner .panels-grid {
 }
 
 .btc-levels-table th {
-  padding: 6px 16px;
+  padding: 4px 12px;
   text-align: left;
   font-size: 9px;
   font-weight: 600;
@@ -12397,7 +12793,7 @@ body.has-critical-banner .panels-grid {
 }
 
 .btc-level-name {
-  padding: 8px 16px;
+  padding: 5px 12px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -12415,7 +12811,7 @@ body.has-critical-banner .panels-grid {
 }
 
 .btc-level-value {
-  padding: 8px 16px;
+  padding: 5px 12px;
   text-align: right;
   font-family: 'JetBrains Mono', monospace;
   font-weight: 600;
@@ -12423,7 +12819,7 @@ body.has-critical-banner .panels-grid {
 }
 
 .btc-level-dist {
-  padding: 8px 16px;
+  padding: 5px 12px;
   text-align: right;
   font-family: 'JetBrains Mono', monospace;
   font-weight: 600;
@@ -12433,7 +12829,7 @@ body.has-critical-banner .panels-grid {
 .btc-level-below { color: #f87171; }
 
 .btc-level-source {
-  padding: 8px 16px;
+  padding: 5px 12px;
   text-align: right;
   font-size: 9px;
   color: rgba(255, 255, 255, 0.25);
@@ -12442,7 +12838,7 @@ body.has-critical-banner .panels-grid {
 
 /* Sparkline with Level Lines */
 .btc-sparkline-section {
-  padding: 8px 16px 12px;
+  padding: 6px 12px 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
@@ -12471,57 +12867,68 @@ body.has-critical-banner .panels-grid {
     gap: 12px;
   }
   .btc-regime-price {
-    font-size: 22px;
+    font-size: 16px;
   }
 }
 
-/* ── Opex Expiry Banner ── */
-.btc-opex-banner {
+/* ── Panel Header Right Slot ── */
+.panel-header-right {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  margin-bottom: 8px;
-  font-size: 10px;
+  gap: 6px;
+  margin-left: auto;
 }
 
-.btc-opex-banner.btc-opex-urgent {
+/* ── OPEX Badge (Dashboard Header) ── */
+.opex-header-badge {
+  margin-left: 8px;
+}
+
+.opex-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.opex-tag.opex-urgent {
   border-color: rgba(251, 191, 36, 0.5);
   background: rgba(251, 191, 36, 0.08);
 }
 
-.btc-opex-label {
+.opex-label {
   font-size: 8px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   color: var(--text-dim);
   background: rgba(255, 255, 255, 0.06);
-  padding: 1px 5px;
+  padding: 1px 4px;
   border-radius: 2px;
 }
 
-.btc-opex-urgent .btc-opex-label {
+.opex-urgent .opex-label {
   color: #fbbf24;
   background: rgba(251, 191, 36, 0.15);
 }
 
-.btc-opex-date {
+.opex-info {
   color: var(--text);
   font-weight: 500;
 }
 
-.btc-opex-countdown {
-  margin-left: auto;
+.opex-days {
   font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
   color: var(--text-dim);
 }
 
-.btc-opex-urgent .btc-opex-countdown {
+.opex-urgent .opex-days {
   color: #fbbf24;
 }
 
@@ -12637,4 +13044,135 @@ body.has-critical-banner .panels-grid {
   font-family: 'JetBrains Mono', monospace;
   color: var(--text);
   text-align: right;
+}
+
+/* ==========================================================================
+   Crypto Variant — Mobile Overrides
+   ========================================================================== */
+
+/* Tablet / large phone — signal cards 2-across */
+@media (max-width: 768px) {
+  /* Signal card panels: display as 2-column grid within the flex column */
+  .panels-grid {
+    display: flex !important;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 6px;
+  }
+
+  /* Signal card panels get 2-across layout */
+  .panel:has(.signal-card-solo) {
+    width: calc(50% - 3px) !important;
+    flex: 0 0 calc(50% - 3px);
+    min-height: unset !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+
+  /* Full-width panels (news, watchlist, BTC monitor, etc.) */
+  .panel:has(.news-feed),
+  .panel:has(.live-news-player),
+  .panel:has(.feed-container),
+  .panel:has(.watchlist-container),
+  .panel:has(.btc-monitor-container),
+  .panel:has(.macro-signals-container),
+  .panel:has(.crypto-sector-grid),
+  .panel:has(.rpt-container) {
+    width: 100% !important;
+    flex: 0 0 100%;
+  }
+
+  /* Compact signal card solo styling */
+  .signal-card-solo .macro-signal-value {
+    font-size: 11px;
+  }
+
+  .signal-card-solo .macro-signal-name {
+    font-size: 8px;
+  }
+
+  .signal-card-solo .macro-signal-badge {
+    font-size: 8px;
+    padding: 1px 4px;
+  }
+
+  /* Watchlist table: tighter on mobile */
+  .watchlist-container table {
+    font-size: 10px;
+  }
+
+  /* Crypto sector grid: 2 cols on mobile */
+  .crypto-sector-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Small phone — everything single column, max compact */
+@media (max-width: 480px) {
+  /* Signal card panels: full width on small phones */
+  .panel:has(.signal-card-solo) {
+    width: 100% !important;
+    flex: 0 0 100%;
+  }
+
+  /* BTC monitor: full width, compact padding */
+  .panel:has(.btc-monitor-container) {
+    width: 100% !important;
+  }
+
+  .btc-monitor-container {
+    padding: 6px;
+  }
+
+  .btc-regime-header {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .btc-level-row {
+    font-size: 10px;
+  }
+
+  .btc-level-value,
+  .btc-level-dist {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  .btc-level-source {
+    display: none;
+  }
+
+  /* Crypto sector grid: single column */
+  .crypto-sector-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Watchlist: hide less important columns if needed */
+  .watchlist-container {
+    padding: 2px 4px;
+  }
+
+  /* Compact verdict banner */
+  .macro-verdict {
+    padding: 8px 12px;
+    margin-bottom: 8px;
+  }
+
+  .macro-verdict-value {
+    font-size: 16px;
+  }
+
+  /* Fear & Greed donut smaller */
+  .fg-donut {
+    width: 60px;
+    height: 60px;
+  }
+
+  /* OPEX badge compact */
+  .opex-tag {
+    font-size: 9px;
+    padding: 1px 5px;
+  }
 }

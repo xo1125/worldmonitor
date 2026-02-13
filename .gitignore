@@ -9,3 +9,4 @@ dist/
 .claude/
 .cursor/
 .env.vercel-backup
+.env*.local

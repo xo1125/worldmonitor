@@ -8,18 +8,17 @@ import {
   DEFAULT_PANELS,
   STORAGE_KEYS,
 } from '@/config';
-import { fetchCategoryFeeds, fetchMultipleStocks, fetchCrypto, fetchStablecoins, fetchCryptoSectors, fetchMacroSignals, fetchWatchlist, fetchETFFlows, fetchPredictions } from '@/services';
+import { fetchCategoryFeeds, fetchMultipleStocks, fetchStablecoins, fetchCryptoSectors, fetchMacroSignals, fetchTokenCategories, fetchETFFlows, fetchPredictions } from '@/services';
 import { clusterNewsHybrid } from '@/services/clustering';
 import { dataFreshness } from '@/services/data-freshness';
-import { loadFromStorage, saveToStorage, ExportPanel } from '@/utils';
+import { loadFromStorage, saveToStorage } from '@/utils';
 import { escapeHtml } from '@/utils/sanitize';
-import type { PredictionMarket, MarketData, ClusteredEvent } from '@/types';
+import type { PredictionMarket, MarketData } from '@/types';
 import {
   NewsPanel,
   MarketPanel,
   HeatmapPanel,
   CommoditiesPanel,
-  CryptoPanel,
   PredictionPanel,
   MonitorPanel,
   Panel,
@@ -31,26 +30,26 @@ import {
   BTCMonitorPanel,
   CryptoHeatmapPanel,
   SignalCardPanel,
-  WatchlistPanel,
+  TokenCategoryPanel,
   ETFFlowsPanel,
 } from '@/components';
 import type { SearchResult } from '@/components/SearchModal';
 
 export class App {
   private container: HTMLElement;
-  private readonly PANEL_ORDER_KEY = 'panel-order';
+  private readonly PANEL_ORDER_KEY = 'panel-order-v2';
   private panels: Record<string, Panel> = {};
   private newsPanels: Record<string, NewsPanel> = {};
   private allNews: NewsItem[] = [];
   private monitors: Monitor[];
   private panelSettings: Record<string, PanelConfig>;
   private statusPanel: StatusPanel | null = null;
-  private exportPanel: ExportPanel | null = null;
+  // export panel removed
   private searchModal: SearchModal | null = null;
   private mobileWarningModal: MobileWarningModal | null = null;
   private latestPredictions: PredictionMarket[] = [];
   private latestMarkets: MarketData[] = [];
-  private latestClusters: ClusteredEvent[] = [];
+  // latestClusters removed (was only used by ExportPanel)
   private inFlight: Set<string> = new Set();
   private timeIntervalId: ReturnType<typeof setInterval> | null = null;
   private refreshTimeoutIds: Map<string, ReturnType<typeof setTimeout>> = new Map();
@@ -85,7 +84,6 @@ export class App {
     this.renderLayout();
     this.setupMobileWarning();
     this.setupStatusPanel();
-    this.setupExportPanel();
     this.setupSearchModal();
     this.setupEventListeners();
     await this.loadAllData();
@@ -106,20 +104,37 @@ export class App {
     if (headerLeft) {
       headerLeft.appendChild(this.statusPanel.getElement());
     }
+    this.updateOpexBadge();
   }
 
-  private setupExportPanel(): void {
-    this.exportPanel = new ExportPanel(() => ({
-      news: this.latestClusters.length > 0 ? this.latestClusters : this.allNews,
-      markets: this.latestMarkets,
-      predictions: this.latestPredictions,
-      timestamp: Date.now(),
-    }));
+  /** Render OPEX countdown badge in the main dashboard header */
+  private updateOpexBadge(): void {
+    const OPEX_DATES = [
+      { date: '2026-02-20', label: 'Feb Monthly Opex' },
+      { date: '2026-03-27', label: 'Mar Quarterly Opex' },
+      { date: '2026-04-24', label: 'Apr Monthly Opex' },
+    ];
+    const badge = document.getElementById('opexBadge');
+    if (!badge) return;
 
-    const headerRight = this.container.querySelector('.header-right');
-    if (headerRight) {
-      headerRight.insertBefore(this.exportPanel.getElement(), headerRight.firstChild);
-    }
+    const now = new Date();
+    const upcoming = OPEX_DATES
+      .map(o => ({ ...o, dt: new Date(o.date + 'T08:00:00Z') }))
+      .filter(o => o.dt > now)
+      .sort((a, b) => a.dt.getTime() - b.dt.getTime())[0];
+
+    if (!upcoming) { badge.innerHTML = ''; return; }
+
+    const daysUntil = Math.ceil((upcoming.dt.getTime() - now.getTime()) / 86400000);
+    const urgentClass = daysUntil <= 3 ? 'opex-urgent' : '';
+
+    badge.innerHTML = `
+      <span class="opex-tag ${urgentClass}">
+        <span class="opex-label">OPEX</span>
+        <span class="opex-info">${upcoming.label}</span>
+        <span class="opex-days">${daysUntil}d</span>
+      </span>
+    `;
   }
 
   private setupSearchModal(): void {
@@ -152,7 +167,7 @@ export class App {
     switch (result.type) {
       case 'news': {
         const item = result.data as NewsItem;
-        this.scrollToPanel('politics');
+        this.scrollToPanel('live-news');
         this.highlightNewsItem(item.link);
         break;
       }
@@ -225,19 +240,12 @@ export class App {
     this.container.innerHTML = `
       <div class="header">
         <div class="header-left">
-          <div class="variant-switcher">
-            <span class="variant-option active"
-               data-variant="crypto"
-               title="Crypto Intelligence">
-              <span class="variant-icon">₿</span>
-              <span class="variant-label">CRYPTO</span>
-            </span>
-          </div>
-          <span class="logo">MONITOR</span><span class="version">v${__APP_VERSION__}</span>
+          <span class="logo">FC MONITOR</span><span class="version">v${__APP_VERSION__}</span>
           <div class="status-indicator">
             <span class="status-dot"></span>
             <span>LIVE</span>
           </div>
+          <span class="opex-header-badge" id="opexBadge"></span>
         </div>
         <div class="header-right">
           <button class="search-btn" id="searchBtn"><kbd>⌘K</kbd> Search</button>
@@ -338,10 +346,6 @@ export class App {
     const panelsGrid = document.getElementById('panelsGrid')!;
 
     // Create all panels
-    const politicsPanel = new NewsPanel('politics', 'World / Geopolitical');
-    this.newsPanels['politics'] = politicsPanel;
-    this.panels['politics'] = politicsPanel;
-
     const techPanel = new NewsPanel('tech', 'Technology / AI');
     this.newsPanels['tech'] = techPanel;
     this.panels['tech'] = techPanel;
@@ -374,8 +378,16 @@ export class App {
     this.newsPanels['gov'] = govPanel;
     this.panels['gov'] = govPanel;
 
-    const cryptoPanel = new CryptoPanel();
-    this.panels['crypto'] = cryptoPanel;
+    // Token category panels
+    const TOKEN_CATEGORY_PANELS: Array<[string, string]> = [
+      ['tokens-bluechips', 'Main List'],
+      ['tokens-defi', 'DeFi Tokens'],
+      ['tokens-ai', 'AI Tokens'],
+      ['tokens-other', 'Tokens (Other)'],
+    ];
+    for (const [panelId, panelTitle] of TOKEN_CATEGORY_PANELS) {
+      this.panels[panelId] = new TokenCategoryPanel(panelId, panelTitle);
+    }
 
     // Crypto variant panels
     const cryptoHeatmapPanel = new CryptoHeatmapPanel();
@@ -386,16 +398,13 @@ export class App {
       ['signal-liquidity', 'Liquidity'],
       ['signal-flow', 'Flow Structure'],
       ['signal-macro', 'Macro Regime'],
-      ['signal-technical', 'Technical Trend'],
+      ['signal-momentum', 'Momentum'],
       ['signal-hashrate', 'Hash Rate'],
       ['signal-feargreed', 'Fear & Greed'],
     ];
     for (const [panelId, panelTitle] of SIGNAL_PANELS) {
       this.panels[panelId] = new SignalCardPanel(panelId, panelTitle);
     }
-
-    const watchlistPanel = new WatchlistPanel();
-    this.panels['watchlist'] = watchlistPanel;
 
     const etfFlowsPanel = new ETFFlowsPanel();
     this.panels['etf-flows'] = etfFlowsPanel;
@@ -441,10 +450,10 @@ export class App {
       const missing = defaultOrder.filter(k => !savedOrder.includes(k));
       // Remove any saved panels that no longer exist
       const valid = savedOrder.filter(k => defaultOrder.includes(k));
-      // Insert missing panels after 'politics' (except monitors which goes at end)
+      // Insert missing panels at the end (except monitors which goes last)
       const monitorsIdx = valid.indexOf('monitors');
       if (monitorsIdx !== -1) valid.splice(monitorsIdx, 1); // Remove monitors temporarily
-      const insertIdx = valid.indexOf('politics') + 1 || 0;
+      const insertIdx = valid.length;
       const newPanels = missing.filter(k => k !== 'monitors');
       valid.splice(insertIdx, 0, ...newPanels);
       valid.push('monitors'); // Always put monitors last
@@ -791,7 +800,7 @@ export class App {
     this.updateSearchIndex();
   }
 
-  private async loadNewsCategory(category: string, feeds: typeof FEEDS.politics): Promise<NewsItem[]> {
+  private async loadNewsCategory(category: string, feeds: typeof FEEDS.trading): Promise<NewsItem[]> {
     try {
       const panel = this.newsPanels[category];
       const renderIntervalMs = 250;
@@ -857,7 +866,7 @@ export class App {
         status: 'ok',
         itemCount: items.length,
       });
-      this.statusPanel?.updateApi('RSS2JSON', { status: 'ok' });
+      this.statusPanel?.updateApi('RSS Proxy', { status: 'ok' });
 
       return items;
     } catch (error) {
@@ -865,7 +874,7 @@ export class App {
         status: 'error',
         errorMessage: String(error),
       });
-      this.statusPanel?.updateApi('RSS2JSON', { status: 'error' });
+      this.statusPanel?.updateApi('RSS Proxy', { status: 'error' });
       return [];
     }
   }
@@ -873,14 +882,6 @@ export class App {
   private async loadNews(): Promise<void> {
     // Build categories dynamically based on what feeds exist
     const allCategories = [
-      { key: 'politics', feeds: FEEDS.politics },
-      { key: 'tech', feeds: FEEDS.tech },
-      { key: 'finance', feeds: FEEDS.finance },
-      { key: 'gov', feeds: FEEDS.gov },
-      { key: 'layoffs', feeds: FEEDS.layoffs },
-      { key: 'ai', feeds: FEEDS.ai },
-      { key: 'security', feeds: FEEDS.security },
-      // Crypto variant categories
       { key: 'bitcoin', feeds: FEEDS.bitcoin },
       { key: 'ethereum', feeds: FEEDS.ethereum },
       { key: 'altcoins', feeds: FEEDS.altcoins },
@@ -888,6 +889,7 @@ export class App {
       { key: 'nft', feeds: FEEDS.nft },
       { key: 'regulation', feeds: FEEDS.regulation },
       { key: 'trading', feeds: FEEDS.trading },
+      { key: 'finance', feeds: FEEDS.finance },
     ];
     // Filter to only categories that have feeds defined
     const categories = allCategories.filter(c => c.feeds && c.feeds.length > 0);
@@ -914,9 +916,9 @@ export class App {
 
     // Update clusters for correlation analysis
     try {
-      this.latestClusters = await clusterNewsHybrid(this.allNews);
+      await clusterNewsHybrid(this.allNews);
     } catch (error) {
-      console.error('[App] Clustering failed, clusters unchanged:', error);
+      console.error('[App] Clustering failed:', error);
     }
   }
 
@@ -967,10 +969,12 @@ export class App {
       this.statusPanel?.updateApi('Finnhub', { status: 'error' });
     }
 
+    // Token category panels (Bluechips, DeFi, AI, Other)
     try {
-      // Crypto
-      const crypto = await fetchCrypto();
-      (this.panels['crypto'] as CryptoPanel).renderCrypto(crypto);
+      const categories = await fetchTokenCategories();
+      for (const cat of categories) {
+        (this.panels[cat.panelId] as TokenCategoryPanel)?.renderTokens(cat.tokens);
+      }
       this.statusPanel?.updateApi('CoinGecko', { status: 'ok' });
     } catch {
       this.statusPanel?.updateApi('CoinGecko', { status: 'error' });
@@ -1003,13 +1007,14 @@ export class App {
 
     try {
       const macroData = await fetchMacroSignals();
+      this.statusPanel?.updateApi('Macro Signals', { status: macroData ? 'ok' : 'error' });
       if (macroData) {
         // Map signal names to panel IDs
         const signalPanelMap: Record<string, string> = {
           'Liquidity': 'signal-liquidity',
           'Flow Structure': 'signal-flow',
           'Macro Regime': 'signal-macro',
-          'Technical Trend': 'signal-technical',
+          'Momentum': 'signal-momentum',
           'Hash Rate': 'signal-hashrate',
           'Fear & Greed': 'signal-feargreed',
         };
@@ -1022,14 +1027,7 @@ export class App {
       }
     } catch (e) {
       console.error('[App] Macro signals load failed:', e);
-    }
-
-    // Watchlist
-    try {
-      const watchlistData = await fetchWatchlist();
-      (this.panels['watchlist'] as WatchlistPanel)?.renderWatchlist(watchlistData);
-    } catch (e) {
-      console.error('[App] Watchlist load failed:', e);
+      this.statusPanel?.updateApi('Macro Signals', { status: 'error' });
     }
 
     // ETF Flows
@@ -1119,14 +1117,16 @@ export class App {
     this.scheduleRefresh('predictions', () => this.loadPredictions(), REFRESH_INTERVALS.predictions);
 
     // Crypto-specific refreshes
-    this.scheduleRefresh('watchlist', async () => {
+    this.scheduleRefresh('token-categories', async () => {
       try {
-        const data = await fetchWatchlist();
-        (this.panels['watchlist'] as WatchlistPanel)?.renderWatchlist(data);
+        const categories = await fetchTokenCategories();
+        for (const cat of categories) {
+          (this.panels[cat.panelId] as TokenCategoryPanel)?.renderTokens(cat.tokens);
+        }
       } catch (e) {
-        console.error('[App] Watchlist refresh failed:', e);
+        console.error('[App] Token categories refresh failed:', e);
       }
-    }, 60000); // 60s
+    }, 120000); // 2 min (matches API cache)
 
     this.scheduleRefresh('etf-flows', async () => {
       try {
@@ -1159,7 +1159,7 @@ export class App {
             'Liquidity': 'signal-liquidity',
             'Flow Structure': 'signal-flow',
             'Macro Regime': 'signal-macro',
-            'Technical Trend': 'signal-technical',
+            'Momentum': 'signal-momentum',
             'Hash Rate': 'signal-hashrate',
             'Fear & Greed': 'signal-feargreed',
           };

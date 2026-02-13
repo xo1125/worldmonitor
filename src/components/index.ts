@@ -18,6 +18,8 @@ export * from './CryptoHeatmapPanel';
 export * from './MacroSignalsPanel';
 export * from './SignalCardPanel';
 export * from './WatchlistPanel';
+export * from './PortfolioPanel';
+export * from './TokenCategoryPanel';
 export * from './TaoSubnetPanel';
 export * from './ETFFlowsPanel';
 export * from './BTCMonitorPanel';

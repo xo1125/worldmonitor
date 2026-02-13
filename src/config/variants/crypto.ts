@@ -91,19 +91,23 @@ export const DEFAULT_PANELS: Record<string, PanelConfig> = {
   'signal-liquidity': { name: 'Liquidity', enabled: true, priority: 1 },
   'signal-flow': { name: 'Flow Structure', enabled: true, priority: 1 },
   'signal-macro': { name: 'Macro Regime', enabled: true, priority: 1 },
-  'signal-technical': { name: 'Technical Trend', enabled: true, priority: 1 },
+  'signal-momentum': { name: 'Momentum', enabled: true, priority: 1 },
   'signal-hashrate': { name: 'Hash Rate', enabled: true, priority: 1 },
   'signal-feargreed': { name: 'Fear & Greed', enabled: true, priority: 1 },
 
   // ── Core panels (hero row — most important) ──
   'btc-monitor': { name: 'BTC Monitor', enabled: true, priority: 1 },
-  crypto: { name: 'Crypto Prices', enabled: true, priority: 1 },
-  watchlist: { name: 'Watchlist', enabled: true, priority: 1 },
-  commodities: { name: 'Commodities / VIX', enabled: true, priority: 1 },
+  'tokens-bluechips': { name: 'Main List', enabled: true, priority: 1 },
+  'etf-flows': { name: 'BTC ETF', enabled: true, priority: 1 },
+  'stablecoin-supply': { name: 'Stablecoins', enabled: true, priority: 1 },
+  commodities: { name: 'Macro', enabled: true, priority: 1 },
+
+  // ── Token Portfolios ──
+  'tokens-defi': { name: 'DeFi Tokens', enabled: true, priority: 1 },
+  'tokens-ai': { name: 'AI Tokens', enabled: true, priority: 1 },
+  'tokens-other': { name: 'Tokens (Other)', enabled: true, priority: 1 },
 
   // ── Market Data ──
-  'etf-flows': { name: 'BTC ETF Tracker', enabled: true, priority: 1 },
-  'stablecoin-supply': { name: 'Stablecoins', enabled: true, priority: 1 },
   'crypto-heatmap': { name: 'Crypto Sectors', enabled: true, priority: 1 },
 
   // ── News ──

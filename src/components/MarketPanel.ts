@@ -68,7 +68,7 @@ export class HeatmapPanel extends Panel {
 
 export class CommoditiesPanel extends Panel {
   constructor() {
-    super({ id: 'commodities', title: 'Commodities / VIX' });
+    super({ id: 'commodities', title: 'Macro' });
   }
 
   public renderCommodities(data: Array<{ display: string; price: number | null; change: number | null }>): void {

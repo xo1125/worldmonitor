@@ -10,23 +10,42 @@ const REALIZED_PRICE_FALLBACK = 55800;
 const TRUE_MEAN_FALLBACK = 80200;
 
 async function fetchBTCPrice() {
-  try {
-    const url = 'https://query1.finance.yahoo.com/v8/finance/chart/BTC-USD?range=60d&interval=1d';
-    const response = await fetch(url, {
+  // Fetch spot price from CoinGecko (matches Main List panel source)
+  // and 60-day history from Yahoo for sparkline
+  const [geckoRes, yahooRes] = await Promise.allSettled([
+    fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd', {
+      headers: { 'Accept': 'application/json' },
+    }),
+    fetch('https://query1.finance.yahoo.com/v8/finance/chart/BTC-USD?range=60d&interval=1d', {
       headers: { 'User-Agent': 'Mozilla/5.0' },
-    });
-    if (!response.ok) return null;
-    const data = await response.json();
-    const result = data.chart?.result?.[0];
-    if (!result) return null;
+    }),
+  ]);
 
-    const closes = (result.indicators?.quote?.[0]?.close || []).filter(c => c !== null);
-    const price = result.meta?.regularMarketPrice;
+  let price = null;
+  let closes = [];
 
-    return { price, closes };
-  } catch {
-    return null;
+  // CoinGecko spot price (primary — matches Main List)
+  if (geckoRes.status === 'fulfilled' && geckoRes.value.ok) {
+    try {
+      const gd = await geckoRes.value.json();
+      price = gd?.bitcoin?.usd ?? null;
+    } catch { /* ignore */ }
   }
+
+  // Yahoo for history + fallback price
+  if (yahooRes.status === 'fulfilled' && yahooRes.value.ok) {
+    try {
+      const data = await yahooRes.value.json();
+      const result = data.chart?.result?.[0];
+      if (result) {
+        closes = (result.indicators?.quote?.[0]?.close || []).filter(c => c !== null);
+        if (!price) price = result.meta?.regularMarketPrice;
+      }
+    } catch { /* ignore */ }
+  }
+
+  if (!price) return null;
+  return { price, closes };
 }
 
 async function fetch200WMA() {

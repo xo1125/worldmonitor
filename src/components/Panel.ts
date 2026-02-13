@@ -46,6 +46,7 @@ export class Panel {
   protected element: HTMLElement;
   protected content: HTMLElement;
   protected header: HTMLElement;
+  protected headerRight: HTMLElement;
   protected countEl: HTMLElement | null = null;
   protected newBadgeEl: HTMLElement | null = null;
   protected panelId: string;
@@ -110,11 +111,16 @@ export class Panel {
 
     this.header.appendChild(headerLeft);
 
+    // Slot for header-level badges/tags (e.g. Options Expiry)
+    this.headerRight = document.createElement('div');
+    this.headerRight.className = 'panel-header-right';
+    this.header.appendChild(this.headerRight);
+
     if (options.showCount) {
       this.countEl = document.createElement('span');
       this.countEl.className = 'panel-count';
       this.countEl.textContent = '0';
-      this.header.appendChild(this.countEl);
+      this.headerRight.appendChild(this.countEl);
     }
 
     this.content = document.createElement('div');
@@ -336,6 +342,18 @@ export class Panel {
    */
   public clearNewBadge(): void {
     this.setNewBadge(0);
+  }
+
+  /**
+   * Set HTML content in the header-right area (for badges, tags, etc.)
+   */
+  public setHeaderBadge(html: string): void {
+    // Keep count element if it exists, replace everything else
+    const countEl = this.countEl;
+    this.headerRight.innerHTML = html;
+    if (countEl) {
+      this.headerRight.appendChild(countEl);
+    }
   }
 
   /**

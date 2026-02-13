@@ -5,23 +5,8 @@
  */
 
 export type DataSourceId =
-  | 'acled'      // Protests/conflicts
-  | 'opensky'    // Military flights
-  | 'wingbits'   // Aircraft enrichment
-  | 'ais'        // Vessel tracking
-  | 'usgs'       // Earthquakes
-  | 'gdelt'      // News velocity
   | 'rss'        // RSS feeds
-  | 'polymarket' // Prediction markets
-  | 'outages'    // Internet outages
-  | 'weather'    // Weather alerts
-  | 'economic'   // Economic indicators (FRED)
-  | 'oil'        // EIA oil analytics
-  | 'spending'        // USASpending.gov
-  | 'firms'          // NASA FIRMS satellite fires
-  | 'acled_conflict' // ACLED battles/explosions/violence
-  | 'ucdp'           // UCDP conflict classification
-  | 'hapi';          // HDX HAPI aggregated conflict data
+  | 'polymarket'; // Prediction markets
 
 export type FreshnessStatus = 'fresh' | 'stale' | 'very_stale' | 'no_data' | 'disabled' | 'error';
 
@@ -54,27 +39,11 @@ const STALE_THRESHOLD = 2 * 60 * 60 * 1000;  // 2 hours
 const VERY_STALE_THRESHOLD = 6 * 60 * 60 * 1000; // 6 hours
 
 // Core sources needed for meaningful risk assessment
-// Note: ACLED is optional since GDELT provides protest data as fallback
-const CORE_SOURCES: DataSourceId[] = ['gdelt', 'rss'];
+const CORE_SOURCES: DataSourceId[] = ['rss'];
 
 const SOURCE_METADATA: Record<DataSourceId, { name: string; requiredForRisk: boolean; panelId?: string }> = {
-  acled: { name: 'Protests & Conflicts', requiredForRisk: false, panelId: 'protests' },
-  opensky: { name: 'Military Flights', requiredForRisk: false, panelId: 'military' },
-  wingbits: { name: 'Aircraft Enrichment', requiredForRisk: false, panelId: 'military' },
-  ais: { name: 'Vessel Tracking', requiredForRisk: false, panelId: 'shipping' },
-  usgs: { name: 'Earthquakes', requiredForRisk: false, panelId: 'natural' },
-  gdelt: { name: 'News Intelligence', requiredForRisk: true, panelId: 'intel' },
   rss: { name: 'Live News Feeds', requiredForRisk: true, panelId: 'live-news' },
   polymarket: { name: 'Prediction Markets', requiredForRisk: false, panelId: 'polymarket' },
-  outages: { name: 'Internet Outages', requiredForRisk: false, panelId: 'outages' },
-  weather: { name: 'Weather Alerts', requiredForRisk: false, panelId: 'weather' },
-  economic: { name: 'Economic Data (FRED)', requiredForRisk: false, panelId: 'economic' },
-  oil: { name: 'Oil Analytics (EIA)', requiredForRisk: false, panelId: 'economic' },
-  spending: { name: 'Gov Spending', requiredForRisk: false, panelId: 'economic' },
-  firms: { name: 'FIRMS Satellite Fires', requiredForRisk: false, panelId: 'map' },
-  acled_conflict: { name: 'Armed Conflicts (ACLED)', requiredForRisk: false, panelId: 'protests' },
-  ucdp: { name: 'Conflict Classification (UCDP)', requiredForRisk: false, panelId: 'protests' },
-  hapi: { name: 'Conflict Aggregates (HDX)', requiredForRisk: false, panelId: 'protests' },
 };
 
 class DataFreshnessTracker {
@@ -304,23 +273,8 @@ export function getStatusIcon(status: FreshnessStatus): string {
 
 // Intelligence gap messages - explains what analysts CAN'T see (Quick Win #1)
 const INTELLIGENCE_GAP_MESSAGES: Record<DataSourceId, string> = {
-  acled: 'Protest/conflict events may be missed—ACLED data unavailable',
-  opensky: 'Military aircraft positions unknown—flight tracking offline',
-  wingbits: 'Aircraft identification limited—enrichment service unavailable',
-  ais: 'Vessel positions outdated—possible dark shipping or AIS transponder-off activity undetected',
-  usgs: 'Recent earthquakes may not be shown—seismic data unavailable',
-  gdelt: 'News event velocity unknown—GDELT intelligence feed offline',
   rss: 'Breaking news may be missed—RSS feeds not updating',
   polymarket: 'Prediction market signals unavailable—early warning capability degraded',
-  outages: 'Internet disruptions may be unreported—outage monitoring offline',
-  weather: 'Severe weather warnings may be missed—weather alerts unavailable',
-  economic: 'Economic indicators stale—Fed/Treasury data not updating',
-  oil: 'Oil market analytics unavailable—EIA data not updating',
-  spending: 'Government spending data unavailable',
-  firms: 'Satellite fire detection unavailable—NASA FIRMS data not updating',
-  acled_conflict: 'Armed conflict events may be missed—ACLED conflict data unavailable',
-  ucdp: 'Conflict classification unavailable—UCDP data not loading',
-  hapi: 'Aggregated conflict data unavailable—HDX HAPI not responding',
 };
 
 /**

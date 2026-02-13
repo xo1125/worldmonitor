@@ -1,13 +1,6 @@
 import { Panel } from './Panel';
 import { escapeHtml } from '@/utils/sanitize';
 
-// Upcoming BTC options expiry dates (major monthly expiries)
-const OPEX_DATES = [
-  { date: '2026-02-20', label: 'Feb Monthly Opex' },
-  { date: '2026-03-27', label: 'Mar Quarterly Opex' },
-  { date: '2026-04-24', label: 'Apr Monthly Opex' },
-];
-
 interface BTCLevel {
   value: number;
   source: 'api' | 'fallback' | 'computed' | 'derived';
@@ -31,31 +24,11 @@ interface BTCLevelsData {
   lastUpdated: string;
 }
 
-const REGIME_CONFIG: Record<string, { label: string; color: string; bg: string; description: string }> = {
-  BULL: {
-    label: 'EXPANSION',
-    color: '#4ade80',
-    bg: 'rgba(74, 222, 128, 0.12)',
-    description: 'Price above STH cost basis — market in expansion mode',
-  },
-  DEFENSIVE: {
-    label: 'DEFENSIVE',
-    color: '#fbbf24',
-    bg: 'rgba(251, 191, 36, 0.12)',
-    description: 'Price between True Mean and STH cost basis — overhead resistance zone',
-  },
-  BEAR: {
-    label: 'STRUCTURAL WEAKNESS',
-    color: '#f87171',
-    bg: 'rgba(248, 113, 113, 0.12)',
-    description: 'Price below True Market Mean — risk of further downside',
-  },
-  FLOOR_TEST: {
-    label: 'FLOOR TEST',
-    color: '#c084fc',
-    bg: 'rgba(192, 132, 252, 0.12)',
-    description: 'Price near 200-Week MA — historical bottom territory',
-  },
+const REGIME_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  BULL: { label: 'EXPANSION', color: '#4ade80', bg: 'rgba(74, 222, 128, 0.12)' },
+  DEFENSIVE: { label: 'DEFENSIVE', color: '#fbbf24', bg: 'rgba(251, 191, 36, 0.12)' },
+  BEAR: { label: 'STRUCTURAL WEAKNESS', color: '#f87171', bg: 'rgba(248, 113, 113, 0.12)' },
+  FLOOR_TEST: { label: 'FLOOR TEST', color: '#c084fc', bg: 'rgba(192, 132, 252, 0.12)' },
 };
 
 export class BTCMonitorPanel extends Panel {
@@ -71,19 +44,20 @@ export class BTCMonitorPanel extends Panel {
     return `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
   }
 
-  private renderRegimeBanner(data: BTCLevelsData): string {
-    const fallback = { label: 'UNKNOWN', color: '#888', bg: 'rgba(136,136,136,0.12)', description: 'Unable to determine regime' };
+  private renderRegimeRow(data: BTCLevelsData): string {
+    const fallback = { label: 'UNKNOWN', color: '#888', bg: 'rgba(136,136,136,0.12)' };
     const cfg = REGIME_CONFIG[data.regime] ?? fallback;
-    const { color, bg, label, description } = cfg;
+    const { color, label } = cfg;
 
     return `
-      <div class="btc-regime-banner" style="background: ${bg}; border-color: ${color}">
-        <div class="btc-regime-top">
-          <span class="btc-regime-label" style="color: ${color}">${label}</span>
+      <div class="btc-regime-row">
+        <div class="btc-regime-left">
+          <span class="btc-regime-tag" style="color: ${color}; border-color: ${color}">${label}</span>
           ${data.dead_cat_warning ? '<span class="btc-dead-cat-badge">TRAP ZONE</span>' : ''}
         </div>
-        <div class="btc-regime-price">${this.formatPrice(data.price)}</div>
-        <div class="btc-regime-desc">${description}</div>
+        <div class="btc-regime-right">
+          <span class="btc-regime-price">${this.formatPrice(data.price)}</span>
+        </div>
       </div>
     `;
   }
@@ -169,28 +143,6 @@ export class BTCMonitorPanel extends Panel {
       <div class="btc-dead-cat-warning">
         <span class="btc-warning-icon">!</span>
         <span>Dead Cat Bounce Risk — Price near STH cost basis rejection zone. Watch for failure to hold above $90K.</span>
-      </div>
-    `;
-  }
-
-  private renderOpexBanner(): string {
-    const now = new Date();
-    const upcoming = OPEX_DATES
-      .map(o => ({ ...o, dt: new Date(o.date + 'T08:00:00Z') }))
-      .filter(o => o.dt > now)
-      .sort((a, b) => a.dt.getTime() - b.dt.getTime())[0];
-
-    if (!upcoming) return '';
-
-    const daysUntil = Math.ceil((upcoming.dt.getTime() - now.getTime()) / 86400000);
-    const isUrgent = daysUntil <= 3;
-    const urgentClass = isUrgent ? 'btc-opex-urgent' : '';
-
-    return `
-      <div class="btc-opex-banner ${urgentClass}">
-        <span class="btc-opex-label">OPTIONS EXPIRY</span>
-        <span class="btc-opex-date">${upcoming.label}</span>
-        <span class="btc-opex-countdown">${daysUntil}d</span>
       </div>
     `;
   }
@@ -295,8 +247,7 @@ export class BTCMonitorPanel extends Panel {
   public renderLevels(data: BTCLevelsData): void {
     const html = `
       <div class="btc-monitor-container">
-        ${this.renderOpexBanner()}
-        ${this.renderRegimeBanner(data)}
+        ${this.renderRegimeRow(data)}
         <div class="btc-gauges-row">
           ${this.renderRiskGauge(data.risk_score)}
           ${this.renderRetestBar(data)}

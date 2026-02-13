@@ -1,18 +1,18 @@
 import { Panel } from './Panel';
-import type { StablecoinData } from '@/types';
+import type { StablecoinData, StablecoinSummary } from '@/types';
 
 export class StablecoinSupplyPanel extends Panel {
   constructor() {
     super({ id: 'stablecoin-supply', title: 'Stablecoins' });
   }
 
-  public renderSupply(data: StablecoinData[]): void {
+  public renderSupply(data: StablecoinData[], summary?: StablecoinSummary): void {
     if (data.length === 0) {
       this.showError('Failed to load stablecoin data');
       return;
     }
 
-    const totalSupply = data.reduce((sum, coin) => sum + (coin.marketCap || 0), 0);
+    const totalSupply = summary?.totalMarketCap ?? data.reduce((sum, coin) => sum + (coin.marketCap || 0), 0);
     const totalMcapChange = data.reduce((sum, coin) => sum + (coin.mcapChange24h || 0), 0);
 
     const formatB = (n: number): string => {
@@ -33,12 +33,19 @@ export class StablecoinSupplyPanel extends Panel {
 
     const flowClass = totalMcapChange >= 0 ? 'supply-inflow' : 'supply-outflow';
 
+    // Health status banner from server summary
+    const healthStatus = summary?.healthStatus ?? this.computeLocalHealth(data);
+    const healthClass = healthStatus === 'HEALTHY' ? 'health-ok' : healthStatus === 'CAUTION' ? 'health-caution' : 'health-warning';
+    const healthIcon = healthStatus === 'HEALTHY' ? '●' : healthStatus === 'CAUTION' ? '◐' : '▲';
+    const healthLabel = healthStatus === 'HEALTHY' ? 'All Pegs Stable' : healthStatus === 'CAUTION' ? 'Minor Deviation' : 'Depeg Alert';
+
     const breakdown = data
       .filter(c => c.marketCap > 0)
       .sort((a, b) => b.marketCap - a.marketCap)
       .map(coin => {
-        const pegDev = Math.abs(coin.price - 1.0);
-        const pegClass = pegDev <= 0.005 ? 'peg-stable' : pegDev <= 0.01 ? 'peg-warning' : 'peg-danger';
+        // Use server pegStatus if available, otherwise compute locally
+        const pegStatus = coin.pegStatus ?? this.computePegStatus(coin.price);
+        const pegClass = pegStatus === 'ON_PEG' ? 'peg-stable' : pegStatus === 'SLIGHT_DEPEG' ? 'peg-warning' : 'peg-danger';
         const mcapChangeClass = coin.mcapChange24h >= 0 ? 'supply-change-up' : 'supply-change-down';
         const mcapChangeStr = coin.mcapChange24h !== 0
           ? formatChange(coin.mcapChange24h)
@@ -57,6 +64,10 @@ export class StablecoinSupplyPanel extends Panel {
 
     const html = `
       <div class="supply-container">
+        <div class="supply-health-banner ${healthClass}">
+          <span class="health-icon">${healthIcon}</span>
+          <span class="health-label">${healthLabel}</span>
+        </div>
         <div class="supply-header-compact">
           <div class="supply-total-compact">
             <span class="supply-total-label-sm">Total Supply</span>
@@ -80,5 +91,19 @@ export class StablecoinSupplyPanel extends Panel {
     `;
 
     this.setContent(html);
+  }
+
+  private computePegStatus(price: number): 'ON_PEG' | 'SLIGHT_DEPEG' | 'DEPEGGED' {
+    const dev = Math.abs(price - 1.0);
+    if (dev <= 0.005) return 'ON_PEG';
+    if (dev <= 0.01) return 'SLIGHT_DEPEG';
+    return 'DEPEGGED';
+  }
+
+  private computeLocalHealth(data: StablecoinData[]): 'HEALTHY' | 'CAUTION' | 'WARNING' {
+    const statuses = data.map(c => c.pegStatus ?? this.computePegStatus(c.price));
+    if (statuses.some(s => s === 'DEPEGGED')) return 'WARNING';
+    if (statuses.filter(s => s === 'SLIGHT_DEPEG').length >= 2) return 'CAUTION';
+    return 'HEALTHY';
   }
 }

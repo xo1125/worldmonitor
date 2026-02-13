@@ -2,14 +2,14 @@ import { Panel } from './Panel';
 import type { MacroSignal } from '@/types';
 import { escapeHtml } from '@/utils/sanitize';
 
-// Map signal names to external URLs
+// Map signal names to external URLs (must match actual data sources in api/macro-signals.js)
 const SIGNAL_LINKS: Record<string, string> = {
-  'Liquidity': 'https://www.tradingview.com/chart/?symbol=BINANCE:USDT.D',
-  'Flow Structure': 'https://www.coinglass.com/flow/bitcoin',
-  'Macro Regime': 'https://www.tradingview.com/chart/?symbol=TVC:DXY',
-  'Technical Trend': 'https://www.tradingview.com/chart/?symbol=BITSTAMP:BTCUSD',
-  'Hash Rate': 'https://mempool.space/graphs/mining/hashrate-difficulty',
-  'Fear & Greed': 'https://alternative.me/crypto/fear-and-greed-index/',
+  'Liquidity': 'https://www.tradingview.com/chart/?symbol=FX_IDC:JPYUSD',       // Signal uses JPY 30d ROC
+  'Flow Structure': 'https://www.coinglass.com/flow/bitcoin',                      // CoinGlass flow data
+  'Macro Regime': 'https://www.tradingview.com/chart/?symbol=AMEX:QQQ/AMEX:XLP',  // Signal uses QQQ/XLP ratio
+  'Technical Trend': 'https://www.tradingview.com/chart/?symbol=BITSTAMP:BTCUSD',  // BTC price + SMAs
+  'Hash Rate': 'https://mempool.space/graphs/mining/hashrate-difficulty',           // Mempool hashrate
+  'Fear & Greed': 'https://alternative.me/crypto/fear-and-greed-index/',           // Alternative.me F&G
 };
 
 export class SignalCardPanel extends Panel {

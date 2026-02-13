@@ -209,17 +209,24 @@ interface CoinGeckoExtendedResponse {
   };
 }
 
-export async function fetchStablecoins(): Promise<StablecoinData[]> {
+// Stablecoin response with optional summary (new API shape)
+export interface StablecoinFetchResult {
+  coins: StablecoinData[];
+  summary?: import('@/types').StablecoinSummary;
+}
+
+export async function fetchStablecoins(): Promise<StablecoinFetchResult> {
   try {
     const ids = Object.keys(STABLECOIN_MAP).join(',');
-    // Use /coins/markets for 7d change and mcap change data
     const url = `/api/stablecoin-markets?ids=${ids}`;
     const response = await fetchWithProxy(url);
     if (!response.ok) {
-      // Fallback to simple/price if markets endpoint fails
-      return fetchStablecoinsFallback();
+      return { coins: await fetchStablecoinsFallback() };
     }
-    const coins: Array<{
+    const data = await response.json();
+
+    // Handle new {coins, summary} shape or legacy array shape
+    const rawCoins: Array<{
       id: string;
       current_price: number;
       price_change_percentage_24h: number;
@@ -227,9 +234,11 @@ export async function fetchStablecoins(): Promise<StablecoinData[]> {
       market_cap: number;
       total_volume: number;
       market_cap_change_24h: number;
-    }> = await response.json();
+      pegStatus?: string;
+      pegDeviation?: number;
+    }> = Array.isArray(data) ? data : data.coins;
 
-    return coins.map(coin => {
+    const coins = rawCoins.map(coin => {
       const info = STABLECOIN_MAP[coin.id];
       return {
         name: info?.name ?? coin.id,
@@ -240,11 +249,18 @@ export async function fetchStablecoins(): Promise<StablecoinData[]> {
         marketCap: coin.market_cap ?? 0,
         volume24h: coin.total_volume ?? 0,
         mcapChange24h: coin.market_cap_change_24h ?? 0,
+        pegStatus: coin.pegStatus as StablecoinData['pegStatus'],
+        pegDeviation: coin.pegDeviation,
       };
     });
+
+    return {
+      coins,
+      summary: Array.isArray(data) ? undefined : data.summary,
+    };
   } catch (e) {
     console.error('Failed to fetch stablecoins:', e);
-    return fetchStablecoinsFallback();
+    return { coins: await fetchStablecoinsFallback() };
   }
 }
 

@@ -55,30 +55,24 @@ export const MARKET_SYMBOLS: MarketSymbol[] = [
   { symbol: 'BAC', name: 'BofA', display: 'BAC' },
 ];
 
-const SITE_VARIANT = import.meta.env.VITE_VARIANT || 'full';
-
-const CRYPTO_MAP_BASE: Record<string, { name: string; symbol: string }> = {
+export const CRYPTO_MAP: Record<string, { name: string; symbol: string }> = {
   bitcoin: { name: 'Bitcoin', symbol: 'BTC' },
   ethereum: { name: 'Ethereum', symbol: 'ETH' },
   solana: { name: 'Solana', symbol: 'SOL' },
-};
-
-const CRYPTO_MAP_EXTENDED: Record<string, { name: string; symbol: string }> = {
-  ...CRYPTO_MAP_BASE,
   bittensor: { name: 'Bittensor', symbol: 'TAO' },
   'aerodrome-finance': { name: 'Aerodrome', symbol: 'AERO' },
   zama: { name: 'Zama', symbol: 'ZAMA' },
 };
-
-export const CRYPTO_MAP = SITE_VARIANT === 'crypto' ? CRYPTO_MAP_EXTENDED : CRYPTO_MAP_BASE;
 export const CRYPTO_IDS = Object.keys(CRYPTO_MAP);
 
 // Stablecoin tracking (used by crypto variant)
-export const STABLECOIN_IDS = ['tether', 'usd-coin', 'dai'] as const;
+export const STABLECOIN_IDS = ['tether', 'usd-coin', 'dai', 'first-digital-usd', 'ethena-usde'] as const;
 export const STABLECOIN_MAP: Record<string, { name: string; symbol: string }> = {
   tether: { name: 'Tether', symbol: 'USDT' },
   'usd-coin': { name: 'USD Coin', symbol: 'USDC' },
   dai: { name: 'Dai', symbol: 'DAI' },
+  'first-digital-usd': { name: 'FDUSD', symbol: 'FDUSD' },
+  'ethena-usde': { name: 'USDe', symbol: 'USDe' },
 };
 
 // Crypto sector definitions for heatmap (used by crypto variant)

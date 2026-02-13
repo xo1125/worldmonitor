@@ -1,4 +1,4 @@
-const DB_NAME = 'worldmonitor_db';
+const DB_NAME = 'fcmonitor_db';
 const DB_VERSION = 1;
 
 interface BaselineEntry {

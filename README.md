@@ -1,12 +1,12 @@
-# World Monitor
+# FC Monitor
 
 **Real-time global intelligence dashboard** — AI-powered news aggregation, geopolitical monitoring, and infrastructure tracking in a unified situational awareness interface.
 
-[![GitHub stars](https://img.shields.io/github/stars/koala73/worldmonitor?style=social)](https://github.com/koala73/worldmonitor/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/koala73/worldmonitor?style=social)](https://github.com/koala73/worldmonitor/network/members)
+[![GitHub stars](https://img.shields.io/github/stars/xo1125/worldmonitor?style=social)](https://github.com/xo1125/worldmonitor/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/xo1125/worldmonitor?style=social)](https://github.com/xo1125/worldmonitor/network/members)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Last commit](https://img.shields.io/github/last-commit/koala73/worldmonitor)](https://github.com/koala73/worldmonitor/commits/main)
+[![Last commit](https://img.shields.io/github/last-commit/xo1125/worldmonitor)](https://github.com/xo1125/worldmonitor/commits/main)
 
 <p align="center">
   <a href="https://worldmonitor.app"><strong>Live Demo</strong></a> &nbsp;·&nbsp;
@@ -14,11 +14,11 @@
   <a href="./docs/DOCUMENTATION.md"><strong>Full Documentation</strong></a>
 </p>
 
-![World Monitor Dashboard](new-world-monitor.png)
+![FC Monitor Dashboard](new-fc-monitor.png)
 
 ---
 
-## Why World Monitor?
+## Why FC Monitor?
 
 | Problem | Solution |
 |---------|----------|
@@ -34,7 +34,7 @@
 
 | Variant | URL | Focus |
 |---------|-----|-------|
-| **World Monitor** | [worldmonitor.app](https://worldmonitor.app) | Geopolitics, military, conflicts, infrastructure |
+| **FC Monitor** | [worldmonitor.app](https://worldmonitor.app) | Geopolitics, military, conflicts, infrastructure |
 | **Tech Monitor** | [tech.worldmonitor.app](https://tech.worldmonitor.app) | Startups, AI/ML, cloud, cybersecurity |
 
 Both variants run from a single codebase — switch between them with one click.
@@ -52,7 +52,7 @@ Both variants run from a single codebase — switch between them with one click.
 - **Time filtering** — 1h, 6h, 24h, 48h, 7d event windows
 
 ### AI-Powered Intelligence
-- **World Brief** — LLM-synthesized summary of top global developments (Groq Llama 3.1, Redis-cached)
+- **FC Brief** — LLM-synthesized summary of top global developments (Groq Llama 3.1, Redis-cached)
 - **Hybrid Threat Classification** — instant keyword classifier with async LLM override for higher-confidence results
 - **Focal Point Detection** — correlates entities across news, military activity, protests, outages, and markets to identify convergence
 - **Country Instability Index** — real-time stability scores for 20 monitored nations using weighted multi-signal blend
@@ -255,7 +255,7 @@ Feeds also carry a **propaganda risk rating** and **state affiliation flag**. St
 
 ## Edge Function Architecture
 
-World Monitor uses 30+ Vercel Edge Functions as a lightweight API layer. Each edge function handles a single data source concern — proxying, caching, or transforming external APIs. This architecture avoids a monolithic backend while keeping API keys server-side:
+FC Monitor uses 30+ Vercel Edge Functions as a lightweight API layer. Each edge function handles a single data source concern — proxying, caching, or transforming external APIs. This architecture avoids a monolithic backend while keeping API keys server-side:
 
 - **RSS Proxy** — domain-allowlisted proxy for 100+ feeds, preventing CORS issues and hiding origin servers
 - **AI Pipeline** — Groq and OpenRouter edge functions with Redis deduplication, so identical headlines across concurrent users only trigger one LLM call
@@ -271,7 +271,7 @@ All edge functions include circuit breaker logic and return cached stale data wh
 
 ```bash
 # Clone and run
-git clone https://github.com/koala73/worldmonitor.git
+git clone https://github.com/xo1125/worldmonitor.git
 cd worldmonitor
 npm install
 npm run dev
@@ -363,7 +363,7 @@ See [full roadmap](./docs/DOCUMENTATION.md#roadmap).
 
 ## Support the Project
 
-If you find World Monitor useful:
+If you find FC Monitor useful:
 
 - **Star this repo** to help others discover it
 - **Share** with colleagues interested in OSINT
@@ -380,7 +380,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ## Author
 
-**Elie Habib** — [GitHub](https://github.com/koala73)
+**Elie Habib** — [GitHub](https://github.com/xo1125)
 
 ---
 

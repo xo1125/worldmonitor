@@ -4,14 +4,14 @@
  * Feeds geographic context to AI Insights
  */
 
-import type {
-  InternetOutage,
-  MilitaryFlight,
-  MilitaryVessel,
-  SocialUnrestEvent,
-  AisDisruptionEvent,
-} from '@/types';
 import { TIER1_COUNTRIES } from '@/config/countries';
+
+// Minimal type stubs for geopolitical signals (types removed in crypto-only build)
+interface InternetOutage { country: string; lat: number; lon: number; severity: string; title: string; pubDate: Date; }
+interface MilitaryFlight { lat: number; lon: number; }
+interface MilitaryVessel { lat: number; lon: number; }
+interface SocialUnrestEvent { country: string; lat: number; lon: number; }
+interface AisDisruptionEvent { lat: number; lon: number; severity: 'low' | 'elevated' | 'high'; name: string; description: string; }
 
 export type SignalType =
   | 'internet_outage'

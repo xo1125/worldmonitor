@@ -27,11 +27,11 @@ import {
   generateDedupeKey,
 } from '@/utils/analysis-constants';
 
-import {
-  extractEntitiesFromClusters,
-  findNewsForMarketSymbol,
-} from './entity-extraction';
-import { getEntityIndex } from './entity-index';
+// Entity extraction removed in crypto-only build - stub empty implementations
+const extractEntitiesFromClusters = (_clusters: ClusteredEventCore[]) => new Map<string, unknown>();
+const findNewsForMarketSymbol = (_symbol: string, _contexts: Map<string, unknown>): Array<{ clusterId: string; title: string; confidence: number }> => [];
+// Entity index removed in crypto-only build - stub empty index
+const getEntityIndex = () => ({ byId: new Map<string, { keywords?: string[] }>() });
 import { aggregateThreats } from './threat-classifier';
 
 // Re-export for convenience

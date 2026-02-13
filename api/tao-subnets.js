@@ -28,7 +28,7 @@ async function fetchSubnetData(netuid) {
     const response = await fetch(url, {
       headers: {
         'Accept': 'application/json',
-        'User-Agent': 'WorldMonitor/1.0',
+        'User-Agent': 'FCMonitor/1.0',
       },
     });
 

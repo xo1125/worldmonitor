@@ -1,8 +1,8 @@
-# WorldMonitor Development Notes
+# FCMonitor Development Notes
 
 ## 🤖 Model Preferences (Jan 30, 2026)
 
-**For ALL coding tasks in WorldMonitor, ALWAYS use:**
+**For ALL coding tasks in FCMonitor, ALWAYS use:**
 
 | Task | Model | Alias |
 |------|-------|-------|
@@ -63,38 +63,12 @@ If a panel shows "No news available":
 2. Look for `HTTP 403` or "Domain not allowed" errors
 3. Check if the domain is in `api/rss-proxy.js` allowlist
 
-## Site Variants
-
-Two variants controlled by `VITE_VARIANT` environment variable:
-
-- `full` (default): Geopolitical focus - worldmonitor.app
-- `tech`: Tech/startup focus - startups.worldmonitor.app
-
-### Running Locally
+## Running Locally
 ```bash
-npm run dev        # Full variant
-npm run dev:tech   # Tech variant
+npm run dev        # Start dev server
+npm run build      # Production build
+npm run typecheck  # Type checking only
 ```
-
-### Building
-```bash
-npm run build:full  # Production build for worldmonitor.app
-npm run build:tech  # Production build for startups.worldmonitor.app
-```
-
-## Custom Feed Scrapers
-
-Some sources don't provide RSS feeds. Custom scrapers are in `/api/`:
-
-| Endpoint | Source | Notes |
-|----------|--------|-------|
-| `/api/fwdstart` | FwdStart Newsletter (Beehiiv) | Scrapes archive page, 30min cache |
-
-### Adding New Scrapers
-1. Create `/api/source-name.js` edge function
-2. Scrape source, return RSS XML format
-3. Add to feeds.ts: `{ name: 'Source', url: '/api/source-name' }`
-4. No need to add to rss-proxy allowlist (direct API, not proxied)
 
 ## AI Summarization & Caching
 

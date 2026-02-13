@@ -1,4 +1,4 @@
-# World Monitor v2
+# FC Monitor v2
 
 AI-powered real-time global intelligence dashboard aggregating news, markets, geopolitical data, and infrastructure monitoring into a unified situation awareness interface.
 
@@ -9,22 +9,22 @@ AI-powered real-time global intelligence dashboard aggregating news, markets, ge
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=flat&logo=d3.js&logoColor=white)
 ![Version](https://img.shields.io/badge/version-1.7.0-blue)
 
-![World Monitor Dashboard](new-world-monitor.png)
+![FC Monitor Dashboard](new-fc-monitor.png)
 
 ## Platform Variants
 
-World Monitor runs two specialized variants from a single codebase, each optimized for different monitoring needs:
+FC Monitor runs two specialized variants from a single codebase, each optimized for different monitoring needs:
 
 | Variant | URL | Focus |
 |---------|-----|-------|
-| **🌍 World Monitor** | [worldmonitor.app](https://worldmonitor.app) | Geopolitical intelligence, military tracking, conflict monitoring, infrastructure security |
+| **🌍 FC Monitor** | [worldmonitor.app](https://worldmonitor.app) | Geopolitical intelligence, military tracking, conflict monitoring, infrastructure security |
 | **💻 Tech Monitor** | [tech.worldmonitor.app](https://tech.worldmonitor.app) | Technology sector intelligence, AI/startup ecosystems, cloud infrastructure, tech events |
 
 A compact **variant switcher** in the header allows seamless navigation between variants while preserving your map position and panel configuration.
 
 ---
 
-## World Monitor (Geopolitical)
+## FC Monitor (Geopolitical)
 
 The primary variant focuses on geopolitical intelligence, military tracking, and infrastructure security monitoring.
 
@@ -3058,7 +3058,7 @@ This ensures the dashboard always displays meaningful data even during upstream 
 
 ## Service Status Monitoring
 
-The Service Status panel tracks the operational health of external services that WorldMonitor users may depend on.
+The Service Status panel tracks the operational health of external services that FCMonitor users may depend on.
 
 ### Monitored Services
 
@@ -3195,7 +3195,7 @@ define: {
 }
 
 // App.ts
-const header = `World Monitor v${__APP_VERSION__}`;
+const header = `FC Monitor v${__APP_VERSION__}`;
 ```
 
 ---
@@ -3204,8 +3204,8 @@ const header = `World Monitor v${__APP_VERSION__}`;
 
 ```bash
 # Clone the repository
-git clone https://github.com/koala73/worldmonitor.git
-cd worldmonitor
+git clone https://github.com/koala73/fcmonitor.git
+cd fcmonitor
 
 # Install dependencies
 npm install
@@ -3556,7 +3556,7 @@ See [ROADMAP.md](ROADMAP.md) for detailed planning. Recent intelligence enhancem
 - ✅ **Build-Time Version Sync** - Header version auto-syncs with package.json
 - ✅ **Tech Monitor Variant** - Dedicated technology sector dashboard with startup ecosystems, cloud regions, and tech events
 - ✅ **Smart Marker Clustering** - Geographic grouping of nearby markers with click-to-expand popups
-- ✅ **Variant Switcher UI** - Compact orbital navigation between World Monitor and Tech Monitor
+- ✅ **Variant Switcher UI** - Compact orbital navigation between FC Monitor and Tech Monitor
 - ✅ **CII Learning Mode** - 15-minute calibration period with visual progress indicator
 - ✅ **Regional Tech Coverage** - Verified tech HQ data for MENA, Europe, Asia-Pacific hubs
 - ✅ **Service Status Panel** - External service health monitoring (AI providers, cloud platforms)
@@ -3737,8 +3737,8 @@ Contributions are welcome! Whether you're fixing bugs, adding features, improvin
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/worldmonitor.git
-   cd worldmonitor
+   git clone https://github.com/YOUR_USERNAME/fcmonitor.git
+   cd fcmonitor
    ```
 3. **Install dependencies**:
    ```bash

@@ -1,4 +1,4 @@
-// Crypto variant - crypto.worldmonitor.app
+// Crypto variant - crypto.fcmonitor.app
 import type { PanelConfig, MapLayers } from '@/types';
 import type { VariantConfig } from './base';
 

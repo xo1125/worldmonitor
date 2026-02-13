@@ -169,7 +169,7 @@ const ALLOWED_DOMAINS = [
   'wublock.substack.com',
 ];
 
-// CORS helper - allow worldmonitor.app and Vercel preview domains
+// CORS helper - allow fcmonitor domains and Vercel preview domains
 function getCorsHeaders(req) {
   const origin = req.headers.get('origin') || '*';
   const allowedPatterns = [

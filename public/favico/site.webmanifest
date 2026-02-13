@@ -1,7 +1,7 @@
 {
-  "name": "World Monitor - AI Intelligence Dashboard",
-  "short_name": "WorldMonitor",
-  "description": "AI-powered real-time global intelligence dashboard",
+  "name": "FC Monitor - AI Intelligence Dashboard",
+  "short_name": "FCMonitor",
+  "description": "AI-powered real-time cryptocurrency intelligence dashboard",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",

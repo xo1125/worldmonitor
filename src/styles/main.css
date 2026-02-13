@@ -11883,6 +11883,42 @@ body.has-critical-banner .panels-grid {
   padding: 8px;
 }
 
+/* Health status banner */
+.supply-health-banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  margin-bottom: 6px;
+}
+.supply-health-banner.health-ok {
+  background: rgba(68, 255, 136, 0.08);
+  border: 1px solid rgba(68, 255, 136, 0.2);
+  color: #44ff88;
+}
+.supply-health-banner.health-caution {
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+.supply-health-banner.health-warning {
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  color: #f87171;
+}
+.health-icon {
+  font-size: 8px;
+}
+.health-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 /* Compact header: total + net flow side by side */
 .supply-header-compact {
   display: flex;

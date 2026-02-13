@@ -1,5 +1,4 @@
 import { escapeHtml } from '@/utils/sanitize';
-import { SITE_VARIANT } from '@/config';
 
 type StatusLevel = 'ok' | 'warning' | 'error' | 'disabled';
 
@@ -17,27 +16,7 @@ interface ApiStatus {
   latency?: number;
 }
 
-// Allowlists for each variant
-const TECH_FEEDS = new Set([
-  'Tech', 'Ai', 'Startups', 'Vcblogs', 'RegionalStartups',
-  'Unicorns', 'Accelerators', 'Security', 'Policy', 'Layoffs',
-  'Finance', 'Hardware', 'Cloud', 'Dev', 'Tech Events', 'Crypto',
-  'Markets', 'Events', 'Producthunt', 'Funding', 'Polymarket'
-]);
-const TECH_APIS = new Set([
-  'RSS Proxy', 'Finnhub', 'CoinGecko', 'Tech Events API', 'Service Status', 'Polymarket'
-]);
-
-const WORLD_FEEDS = new Set([
-  'Politics', 'Middleeast', 'Tech', 'Ai', 'Finance',
-  'Gov', 'Intel', 'Layoffs', 'Thinktanks', 'Energy',
-  'Polymarket', 'Weather', 'NetBlocks', 'Shipping', 'Military'
-]);
-const WORLD_APIS = new Set([
-  'RSS2JSON', 'Finnhub', 'CoinGecko', 'Polymarket', 'USGS', 'FRED',
-  'AISStream', 'GDELT Doc', 'EIA', 'USASpending', 'PizzINT', 'FIRMS'
-]);
-
+// Crypto-only allowlists
 const CRYPTO_FEEDS = new Set([
   'Bitcoin', 'Ethereum', 'Altcoins', 'Defi', 'Nft',
   'Regulation', 'Trading', 'Finance', 'Crypto',
@@ -56,9 +35,9 @@ export class StatusPanel {
   private allowedApis: Set<string>;
 
   constructor() {
-    // Set allowlists based on variant
-    this.allowedFeeds = SITE_VARIANT === 'tech' ? TECH_FEEDS : SITE_VARIANT === 'crypto' ? CRYPTO_FEEDS : WORLD_FEEDS;
-    this.allowedApis = SITE_VARIANT === 'tech' ? TECH_APIS : SITE_VARIANT === 'crypto' ? CRYPTO_APIS : WORLD_APIS;
+    // Crypto-only variant
+    this.allowedFeeds = CRYPTO_FEEDS;
+    this.allowedApis = CRYPTO_APIS;
 
     this.element = document.createElement('div');
     this.element.className = 'status-panel-container';

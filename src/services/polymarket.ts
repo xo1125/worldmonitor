@@ -1,6 +1,5 @@
 import type { PredictionMarket } from '@/types';
 import { createCircuitBreaker } from '@/utils';
-import { SITE_VARIANT } from '@/config';
 
 interface PolymarketMarket {
   question: string;
@@ -24,17 +23,6 @@ interface PolymarketEvent {
 }
 
 const breaker = createCircuitBreaker<PredictionMarket[]>({ name: 'Polymarket' });
-
-const GEOPOLITICAL_TAGS = [
-  'politics', 'geopolitics', 'elections', 'world',
-  'ukraine', 'china', 'middle-east', 'europe',
-  'economy', 'fed', 'inflation',
-];
-
-const TECH_TAGS = [
-  'ai', 'tech', 'crypto', 'science',
-  'elon-musk', 'business', 'economy',
-];
 
 const CRYPTO_TAGS = [
   'crypto', 'bitcoin', 'ethereum', 'defi',
@@ -104,7 +92,7 @@ async function fetchTopMarkets(): Promise<PredictionMarket[]> {
 
 export async function fetchPredictions(): Promise<PredictionMarket[]> {
   return breaker.execute(async () => {
-    const tags = SITE_VARIANT === 'tech' ? TECH_TAGS : SITE_VARIANT === 'crypto' ? CRYPTO_TAGS : GEOPOLITICAL_TAGS;
+    const tags = CRYPTO_TAGS;
 
     const eventResults = await Promise.all(tags.map(tag => fetchEventsByTag(tag, 20)));
 

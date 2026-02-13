@@ -242,7 +242,7 @@ Rules:
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': 'https://worldmonitor.app',
-        'X-Title': 'WorldMonitor',
+        'X-Title': 'FCMonitor',
       },
       body: JSON.stringify({
         model: MODEL,

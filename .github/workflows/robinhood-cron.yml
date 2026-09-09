@@ -42,7 +42,7 @@ jobs:
           # History needs Upstash. Until those vars are set on Vercel the
           # endpoint returns 503, which is a pending setup step rather than a
           # broken schedule — don't fail the run every 30 minutes over it.
-          if [ "$code" = "503" ] && grep -q "No Redis configured" /tmp/out.json; then
+          if [ "$code" = "503" ] && grep -q "not present in this deployment" /tmp/out.json; then
             echo "::notice::Upstash is not configured on Vercel yet; no snapshot stored."
             exit 0
           fi

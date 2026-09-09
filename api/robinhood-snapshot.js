@@ -56,8 +56,13 @@ export default async function handler(req) {
     };
 
     const kept = await appendSnapshot(snapshot);
-    if (kept === false) {
-      return respond(503, { error: 'No Redis configured; snapshot not stored' });
+    if (!kept.ok) {
+      return respond(503, {
+        error: kept.reason === 'not-configured'
+          ? 'Upstash credentials are not present in this deployment'
+          : `Upstash rejected the write: ${kept.message}`,
+        reason: kept.reason,
+      });
     }
 
     return respond(200, {
@@ -65,7 +70,7 @@ export default async function handler(req) {
       ts: snapshot.ts,
       tokensRecorded: Object.keys(tokens).length,
       priced: payload.coverage.priced,
-      seriesLength: kept,
+      seriesLength: kept.length,
     });
   } catch (e) {
     console.error('[RH] snapshot failed:', e);

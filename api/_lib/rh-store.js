@@ -67,16 +67,18 @@ export async function writeJSON(key, value, ttlSeconds) {
 /** Append one snapshot and trim the series. Snapshots are deliberately small. */
 export async function appendSnapshot(snapshot) {
   const r = getRedis();
-  if (!r) return false;
+  // Distinguish "no credentials" from "credentials rejected": both used to
+  // report as unconfigured, which sent debugging in the wrong direction.
+  if (!r) return { ok: false, reason: 'not-configured' };
   try {
     const series = (await r.get(KEYS.history)) || [];
     series.push(snapshot);
     const trimmed = series.slice(-HISTORY_MAX);
     await r.set(KEYS.history, trimmed);
-    return trimmed.length;
+    return { ok: true, length: trimmed.length };
   } catch (e) {
     console.warn('[RH] snapshot append failed:', e.message);
-    return false;
+    return { ok: false, reason: 'redis-error', message: String(e.message || e).slice(0, 300) };
   }
 }
 

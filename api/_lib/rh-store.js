@@ -14,8 +14,11 @@ export function getRedis() {
   if (redis) return redis;
   if (redisInitFailed) return null;
 
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  // Vercel's Redis integration provisions KV_REST_API_* rather than
+  // UPSTASH_REDIS_REST_*; both speak the same REST protocol.
+  const url = (process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || '')
+    .trim().replace(/\/+$/, '');
+  const token = (process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || '').trim();
   if (!url || !token) {
     redisInitFailed = true;
     return null;

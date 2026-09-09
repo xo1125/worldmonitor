@@ -16,14 +16,21 @@ export default async function handler(req) {
     // Shape only — never the value. A rediss:// endpoint pasted into the REST
     // variable is the usual cause of an otherwise unexplained write failure.
     UPSTASH_URL_SHAPE: (() => {
-      const u = process.env.UPSTASH_REDIS_REST_URL || '';
-      if (!u) return 'missing';
-      const scheme = u.split('://')[0];
-      const host = u.split('://')[1] || '';
-      return `${scheme}:// · ${host.endsWith('.upstash.io') ? 'upstash.io host' : 'unexpected host'} · len ${u.length}` +
-             (u !== u.trim() ? ' · HAS WHITESPACE' : '') +
-             (/["']/.test(u) ? ' · HAS QUOTES' : '');
+      const raw = process.env.UPSTASH_REDIS_REST_URL || '';
+      if (!raw) return 'missing';
+      const u = raw.trim().replace(/\/+$/, '');
+      const host = (u.split('://')[1] || '').split('/')[0];
+      const suffix = host.split('.').slice(-2).join('.');
+      return `${u.split('://')[0]}:// · domain ${suffix} · len ${raw.length}` +
+             (raw !== raw.trim() ? ' · WHITESPACE' : '') +
+             (raw !== u && raw.trim().endsWith('/') ? ' · TRAILING SLASH' : '') +
+             (/["']/.test(raw) ? ' · QUOTES' : '');
     })(),
+    // Which Redis-ish variables this deployment has at all (names only).
+    REDIS_VARS_PRESENT: [
+      'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN',
+      'KV_REST_API_URL', 'KV_REST_API_TOKEN', 'KV_URL', 'REDIS_URL',
+    ].filter(k => process.env[k]).join(', ') || 'none',
     UPSTASH_TOKEN_SHAPE: (() => {
       const t = process.env.UPSTASH_REDIS_REST_TOKEN || '';
       if (!t) return 'missing';

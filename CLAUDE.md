@@ -166,11 +166,17 @@ on Apify, or pointing `APIFY_X_ACTOR` at another actor.
 The actor also **silently truncates large batches** (17 handles returned 10),
 which is why handles are requested in chunks of 8, two runs at a time.
 
-### Crons
+### Scheduling
 
-`vercel.json` schedules the snapshot every 30 minutes and the X refresh every 12
-hours. **Hobby plans only run crons once a day**; on Hobby, either upgrade or drive
-these from an external scheduler hitting the same URLs with `?secret=$CRON_SECRET`.
+Scheduling lives in `.github/workflows/robinhood-cron.yml`, **not** `vercel.json`.
+Vercel's Hobby plan caps crons at one run per day and *rejects the deployment* if a
+schedule exceeds it — that failure looks like a generic build error and only the
+status link reveals the cause. Snapshots need finer resolution than daily to be
+worth anything, so GitHub Actions drives them every 30 minutes instead.
+
+`/api/robinhood-x?refresh=1` bills Apify per profile, so in production it refuses
+to run unless `CRON_SECRET` is set, and the workflow's follower job is skipped
+without it. `/api/robinhood-snapshot` is idempotent and stays open.
 
 ## Running Locally
 ```bash

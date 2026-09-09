@@ -156,6 +156,13 @@ export default async function handler(req, res) {
     });
   }
 
+  // This path spends Apify credits, so it fails closed in production: an open
+  // refresh endpoint is a way for anyone to bill the account.
+  if (process.env.VERCEL_ENV === 'production' && !process.env.CRON_SECRET) {
+    return json(res, 403, {
+      error: 'Set CRON_SECRET before using ?refresh=1 in production — this path bills Apify.',
+    });
+  }
   if (!isAuthorizedCron(req)) {
     return json(res, 401, { error: 'Unauthorized' });
   }

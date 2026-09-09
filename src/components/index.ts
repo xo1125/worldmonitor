@@ -29,7 +29,4 @@ export * from './ReportingPanel';
 export * from './RHWatchlistPanel';
 export * from './RHChainPanel';
 export * from './RHRevenuePanel';
-export * from './RHMoversPanel';
-export * from './RHOnchainPanel';
-export * from './RHSocialPanel';
-export * from './RHDetailModal';
+export * from './RHTokenPage';

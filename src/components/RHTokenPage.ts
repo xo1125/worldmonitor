@@ -3,12 +3,20 @@ import { fmtUsd, fmtPrice, fmtPct, fmtPctPlain, fmtCount, changeClass } from '@/
 
 interface SeriesPoint { ts: number; fees: number | null; revenue: number | null }
 
+interface Methodology {
+  fees: string | null; revenue: string | null; holders: string | null;
+  supplySide: string | null; url: string | null;
+}
+
 interface RHDetail {
   symbol: string;
   project: string;
   type: string;
   conviction: string;
   note: string | null;
+  description: string | null;
+  primaryMetric: string | null;
+  methodology: Methodology | null;
   handle: string | null;
   links: { chart: string; explorer: string; defillama: string | null; x: string | null };
   market: {
@@ -37,38 +45,42 @@ interface RHDetail {
 }
 
 /**
- * Drill-down for one token: the fundamentals behind the watchlist row.
- * The question it exists to answer is whether the price is supported by
- * anything — revenue, treasury, burn — so valuation multiples lead.
+ * One page per token, at /watch/<symbol>.
+ *
+ * Everything the watchlist deliberately leaves out lives here, so nothing is
+ * stated twice across the tab: the list ranks, this explains. The question it
+ * answers is whether the price is supported by anything — revenue, treasury,
+ * burn — so valuation leads and market data comes last.
  */
-export class RHDetailModal {
+export class RHTokenPage {
   private element: HTMLElement;
-  private escHandler: ((e: KeyboardEvent) => void) | null = null;
+  private onBack: (() => void) | null = null;
 
-  constructor() {
+  constructor(container: HTMLElement) {
     this.element = document.createElement('div');
-    this.element.className = 'rh-modal-overlay';
+    this.element.className = 'rh-token-page';
     this.element.innerHTML = `
-      <div class="rh-modal">
-        <div class="rh-modal-header">
-          <span class="rh-modal-title"></span>
-          <button class="rh-modal-close" aria-label="Close">×</button>
-        </div>
-        <div class="rh-modal-content"></div>
+      <div class="rh-token-head">
+        <button class="rh-back">← Watchlist</button>
+        <span class="rh-modal-title"></span>
       </div>
+      <div class="rh-modal-content"></div>
     `;
-    document.body.appendChild(this.element);
+    container.appendChild(this.element);
+    this.element.querySelector('.rh-back')?.addEventListener('click', () => this.onBack?.());
+  }
 
-    this.element.querySelector('.rh-modal-close')?.addEventListener('click', () => this.hide());
-    this.element.addEventListener('click', (e) => {
-      if ((e.target as HTMLElement).classList.contains('rh-modal-overlay')) this.hide();
-    });
+  public setOnBack(fn: () => void): void {
+    this.onBack = fn;
+  }
+
+  public getElement(): HTMLElement {
+    return this.element;
   }
 
   public async open(symbol: string): Promise<void> {
-    this.setTitle(symbol);
+    this.setTitle(escapeHtml(symbol));
     this.setContent('<div class="rh-modal-loading">Loading…</div>');
-    this.show();
 
     try {
       const res = await fetch(`/api/robinhood-detail?symbol=${encodeURIComponent(symbol)}`);
@@ -221,6 +233,30 @@ export class RHDetailModal {
         ${a.categories.length ? `<div class="rh-modal-note">${a.categories.map(c => escapeHtml(c)).join(' · ')}</div>` : ''}
       </div>` : '';
 
+    const methodology = d.methodology && (d.methodology.revenue || d.methodology.fees) ? `
+      <div class="rh-modal-section">
+        <div class="rh-modal-section-title">HOW THIS IS MEASURED</div>
+        <dl class="rh-method">
+          ${d.methodology.fees ? `<dt>Fees</dt><dd>${escapeHtml(d.methodology.fees)}</dd>` : ''}
+          ${d.methodology.revenue ? `<dt>Revenue</dt><dd>${escapeHtml(d.methodology.revenue)}</dd>` : ''}
+          ${d.methodology.holders ? `<dt>To holders</dt><dd>${escapeHtml(d.methodology.holders)}</dd>` : ''}
+        </dl>
+        <div class="rh-modal-note">Source: DefiLlama fee adapter${
+          d.methodology.url ? ` · <a href="${escapeHtml(d.methodology.url)}" target="_blank" rel="noopener noreferrer">adapter code ↗</a>` : ''
+        }</div>
+      </div>` : '';
+
+    const about = (d.description || d.note) ? `
+      <div class="rh-modal-section">
+        <div class="rh-modal-section-title">ABOUT</div>
+        ${d.description ? `<p class="rh-about">${escapeHtml(d.description)}</p>` : ''}
+        ${d.note ? `<p class="rh-about rh-about-note">${escapeHtml(d.note)}</p>` : ''}
+        <div class="rh-modal-note">
+          ${escapeHtml(d.type)} · ${d.conviction === 'high' ? 'high' : 'low'} conviction${
+            d.primaryMetric ? ` · tracked on ${escapeHtml(d.primaryMetric.toLowerCase())}` : ''}
+        </div>
+      </div>` : '';
+
     const links = [
       ['Chart', d.links.chart],
       ['DefiLlama', d.links.defillama],
@@ -238,12 +274,13 @@ export class RHDetailModal {
             m.turnover != null && m.turnover > 3 ? 'rh-warn' : '')}
         </div>
       </div>
+      ${about}
       ${valuation}
       ${economics}
+      ${methodology}
       ${treasury}
       ${supply}
       ${attention}
-      ${d.note ? `<div class="rh-modal-section"><div class="rh-modal-note">${escapeHtml(d.note)}</div></div>` : ''}
       <div class="rh-modal-links">
         ${links.map(([label, url]) =>
           `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${label} ↗</a>`).join('')}
@@ -252,21 +289,14 @@ export class RHDetailModal {
   }
 
   public show(): void {
-    this.element.classList.add('visible');
-    this.escHandler = (e: KeyboardEvent) => { if (e.key === 'Escape') this.hide(); };
-    document.addEventListener('keydown', this.escHandler);
+    this.element.classList.remove('grid-hidden');
   }
 
   public hide(): void {
-    this.element.classList.remove('visible');
-    if (this.escHandler) {
-      document.removeEventListener('keydown', this.escHandler);
-      this.escHandler = null;
-    }
+    this.element.classList.add('grid-hidden');
   }
 
   public destroy(): void {
-    this.hide();
     this.element.remove();
   }
 }

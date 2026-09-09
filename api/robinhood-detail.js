@@ -101,6 +101,34 @@ export default async function handler(req) {
       type: token.type,
       conviction: token.conviction,
       note: token.note || null,
+      // CoinGecko has no description for tokens this new, so DefiLlama's
+      // protocol blurb is the only real prose available. The registry note
+      // carries the judgement that isn't in any API.
+      description: (feeSummary?.description || protocols?.[slug]?.description || '')
+        .replace(/\s+/g, ' ')
+        .trim() || null,
+      primaryMetric: token.primaryMetric || null,
+      // How DefiLlama actually computes these numbers. Parent protocols keep it
+      // on their children (Pons files everything under V1/V2), so fall through.
+      methodology: (() => {
+        // Merge across versions: Pons V2 documents its revenue split but drops
+        // the holder note that V1 carries, so taking only the newest loses it.
+        const sources = [
+          ...(feeSummary?.childProtocols || []).map(c => c.methodology).filter(Boolean),
+          feeSummary?.methodology,
+        ].filter(Boolean);
+        const m = sources.length ? Object.assign({}, ...sources) : null;
+        if (!m) return null;
+        return {
+          fees: m.Fees || null,
+          revenue: m.Revenue || null,
+          holders: m.HoldersRevenue || null,
+          supplySide: m.SupplySideRevenue || null,
+          url: feeSummary?.methodologyURL
+            || feeSummary?.childProtocols?.filter(c => c.methodologyURL).at(-1)?.methodologyURL
+            || null,
+        };
+      })(),
       handle: token.handle || null,
       address: token.address,
       links: {

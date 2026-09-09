@@ -36,10 +36,7 @@ import {
   RHWatchlistPanel,
   RHChainPanel,
   RHRevenuePanel,
-  RHMoversPanel,
-  RHOnchainPanel,
-  RHSocialPanel,
-  RHDetailModal,
+  RHTokenPage,
 } from '@/components';
 import type { SearchResult } from '@/components/SearchModal';
 
@@ -50,8 +47,16 @@ const TABS: Array<{ id: TabId; label: string; hint: string; path: string }> = [
   { id: 'robinhood', label: 'ROBINHOOD', hint: 'Robinhood Chain token watchlist', path: '/watch' },
 ];
 
-const tabForPath = (pathname: string): TabId | null =>
-  TABS.find(t => t.path !== '/' && pathname.replace(/\/+$/, '') === t.path)?.id ?? null;
+const tabForPath = (pathname: string): TabId | null => {
+  const clean = pathname.replace(/\/+$/, '');
+  return TABS.find(t => t.path !== '/' && (clean === t.path || clean.startsWith(`${t.path}/`)))?.id ?? null;
+};
+
+/** /watch/pons -> PONS. Anything else on the tab is the list view. */
+const tokenForPath = (pathname: string): string | null => {
+  const m = pathname.replace(/\/+$/, '').match(/^\/watch\/([A-Za-z0-9$_-]{1,20})$/);
+  return m?.[1] ? decodeURIComponent(m[1]).toUpperCase() : null;
+};
 
 export class App {
   private container: HTMLElement;
@@ -85,7 +90,8 @@ export class App {
   private rhPanels: Record<string, Panel> = {};
   private rhLoaded = false;
   private macroLoaded = false;
-  private rhDetailModal: RHDetailModal | null = null;
+  private rhTokenPage: RHTokenPage | null = null;
+  private activeToken: string | null = null;
 
   constructor(containerId: string) {
     const el = document.getElementById(containerId);
@@ -337,8 +343,8 @@ export class App {
   public destroy(): void {
     for (const panel of Object.values(this.rhPanels)) panel.destroy();
     this.rhPanels = {};
-    this.rhDetailModal?.destroy();
-    this.rhDetailModal = null;
+    this.rhTokenPage?.destroy();
+    this.rhTokenPage = null;
     this.isDestroyed = true;
 
     // Clear time display interval
@@ -534,25 +540,28 @@ export class App {
 
     this.rhPanels['rh-chain'] = new RHChainPanel();
     this.rhPanels['rh-watchlist'] = new RHWatchlistPanel();
-    this.rhPanels['rh-movers'] = new RHMoversPanel();
     this.rhPanels['rh-revenue'] = new RHRevenuePanel();
-    this.rhPanels['rh-onchain'] = new RHOnchainPanel();
-    this.rhPanels['rh-social'] = new RHSocialPanel();
 
     for (const panel of Object.values(this.rhPanels)) {
       grid.appendChild(panel.getElement());
     }
 
-    // Drill-down shared by the watchlist and revenue tables.
-    this.rhDetailModal = new RHDetailModal();
-    const openDetail = (symbol: string) => void this.rhDetailModal?.open(symbol);
-    (this.rhPanels['rh-watchlist'] as RHWatchlistPanel).setOnSelect(openDetail);
-    (this.rhPanels['rh-revenue'] as RHRevenuePanel).setOnSelect(openDetail);
+    // Token pages live beside the grid, not over it: they are real URLs.
+    const main = grid.parentElement ?? grid;
+    this.rhTokenPage = new RHTokenPage(main);
+    this.rhTokenPage.hide();
+    this.rhTokenPage.setOnBack(() => this.showTokenList());
+
+    const openToken = (symbol: string) => this.showToken(symbol);
+    (this.rhPanels['rh-watchlist'] as RHWatchlistPanel).setOnSelect(openToken);
+    (this.rhPanels['rh-revenue'] as RHRevenuePanel).setOnSelect(openToken);
   }
 
   private setupTabs(): void {
     const params = new URLSearchParams(window.location.search);
     const fromPath = tabForPath(window.location.pathname);
+    // Read before switchTab, which normalises the path and would erase the symbol.
+    const initialToken = tokenForPath(window.location.pathname);
     const fromQuery = params.get('tab');
     // The URL is the only source of truth. Each view has its own HTML shell, so
     // restoring a remembered tab at / would render the watchlist inside the macro
@@ -563,6 +572,11 @@ export class App {
     window.addEventListener('popstate', () => {
       const tab = tabForPath(window.location.pathname) ?? 'macro';
       this.switchTab(tab, { skipUrl: true });
+      const token = tokenForPath(window.location.pathname);
+      if (tab === 'robinhood') {
+        if (token) this.showToken(token, { skipUrl: true });
+        else this.showTokenList({ skipUrl: true });
+      }
     });
 
     document.querySelectorAll<HTMLElement>('.tab-btn').forEach(btn => {
@@ -577,6 +591,14 @@ export class App {
     });
 
     this.switchTab(initial, { replaceUrl: true });
+
+    if (initial === 'robinhood' && initialToken) {
+      this.showToken(initialToken, { skipUrl: true });
+      // Restore the URL switchTab normalised away.
+      const url = new URL(window.location.href);
+      url.pathname = `/watch/${initialToken.toLowerCase()}`;
+      window.history.replaceState({}, '', url);
+    }
   }
 
   private switchTab(tab: TabId, opts: { replaceUrl?: boolean; skipUrl?: boolean } = {}): void {
@@ -587,8 +609,16 @@ export class App {
     const macroGrid = document.getElementById('panelsGrid');
     const rhGrid = document.getElementById('rhGrid');
     macroGrid?.classList.toggle('grid-hidden', tab !== 'macro');
-    rhGrid?.classList.toggle('grid-hidden', tab !== 'robinhood');
-    document.getElementById('rhRefresh')?.classList.toggle('hidden', tab !== 'robinhood');
+    // A token page owns the Robinhood side while it is open.
+    const showingToken = tab === 'robinhood' && this.activeToken !== null;
+    rhGrid?.classList.toggle('grid-hidden', tab !== 'robinhood' || showingToken);
+    if (tab !== 'robinhood') {
+      this.rhTokenPage?.hide();
+      this.activeToken = null;
+    } else if (showingToken) {
+      this.rhTokenPage?.show();
+    }
+    document.getElementById('rhRefresh')?.classList.toggle('hidden', tab !== 'robinhood' || showingToken);
 
     document.querySelectorAll<HTMLElement>('.tab-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.tab === tab);
@@ -596,7 +626,9 @@ export class App {
 
     if (!opts.skipUrl) {
       const url = new URL(window.location.href);
-      url.pathname = TABS.find(t => t.id === tab)?.path ?? '/';
+      url.pathname = this.activeToken && tab === 'robinhood'
+        ? `/watch/${this.activeToken.toLowerCase()}`
+        : TABS.find(t => t.id === tab)?.path ?? '/';
       // ?tab= is the old form; drop it now that the path carries the state.
       url.searchParams.delete('tab');
       window.history[opts.replaceUrl ? 'replaceState' : 'pushState']({}, '', url);
@@ -618,6 +650,34 @@ export class App {
   }
 
   private lastRHPayload: RHPayload | null = null;
+
+  /** Show one token's page and put it in the URL. */
+  private showToken(symbol: string, opts: { skipUrl?: boolean } = {}): void {
+    this.activeToken = symbol;
+    document.getElementById('rhGrid')?.classList.add('grid-hidden');
+    this.rhTokenPage?.show();
+    void this.rhTokenPage?.open(symbol);
+
+    if (!opts.skipUrl) {
+      const url = new URL(window.location.href);
+      url.pathname = `/watch/${symbol.toLowerCase()}`;
+      window.history.pushState({}, '', url);
+    }
+    document.getElementById('rhRefresh')?.classList.add('hidden');
+  }
+
+  private showTokenList(opts: { skipUrl?: boolean } = {}): void {
+    this.activeToken = null;
+    this.rhTokenPage?.hide();
+    document.getElementById('rhGrid')?.classList.remove('grid-hidden');
+    document.getElementById('rhRefresh')?.classList.remove('hidden');
+
+    if (!opts.skipUrl) {
+      const url = new URL(window.location.href);
+      url.pathname = '/watch';
+      window.history.pushState({}, '', url);
+    }
+  }
 
   private updateTabMeta(): void {
     const meta = document.getElementById('tabMeta');
@@ -675,11 +735,8 @@ export class App {
     this.lastRHPayload = payload;
     (this.rhPanels['rh-chain'] as RHChainPanel)?.renderChain(payload.chain);
     (this.rhPanels['rh-watchlist'] as RHWatchlistPanel)?.renderTokens(payload.tokens);
-    (this.rhPanels['rh-movers'] as RHMoversPanel)?.renderMovers(payload.tokens);
     (this.rhPanels['rh-revenue'] as RHRevenuePanel)?.setTokens(payload.tokens);
     (this.rhPanels['rh-revenue'] as RHRevenuePanel)?.renderProtocols(payload.protocols);
-    (this.rhPanels['rh-onchain'] as RHOnchainPanel)?.renderOnchain(payload.tokens);
-    (this.rhPanels['rh-social'] as RHSocialPanel)?.renderSocial(payload.tokens);
     this.updateTabMeta();
   }
 

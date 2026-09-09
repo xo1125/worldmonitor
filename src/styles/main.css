@@ -13739,3 +13739,73 @@ body.has-critical-banner .panels-grid {
 /* Rows that open the drill-down */
 .rh-row,
 .rh-clickable { cursor: pointer; }
+
+/* ── Token page (/watch/<symbol>) ───────────────────────────────────── */
+
+.rh-token-page {
+  overflow-y: auto;
+  padding: 0 0 20px;
+}
+
+.rh-token-page.grid-hidden { display: none; }
+
+.rh-token-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 2;
+}
+
+.rh-back {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  padding: 4px 8px;
+}
+
+.rh-back:hover { color: var(--green); border-color: var(--green); }
+
+.rh-token-page .rh-modal-content { max-width: 900px; }
+
+.rh-about {
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--text);
+  max-width: 70ch;
+}
+
+.rh-about-note {
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+
+.rh-method {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.rh-method dt {
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 9px;
+  margin-top: 8px;
+}
+
+.rh-method dd {
+  margin: 2px 0 0;
+  max-width: 80ch;
+}
+
+.rh-method a, .rh-modal-note a { color: var(--text-dim); }
+.rh-method a:hover, .rh-modal-note a:hover { color: var(--green); }

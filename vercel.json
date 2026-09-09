@@ -4,6 +4,10 @@
     {
       "source": "/watch",
       "destination": "/watch.html"
+    },
+    {
+      "source": "/watch/:symbol",
+      "destination": "/watch.html"
     }
   ]
 }

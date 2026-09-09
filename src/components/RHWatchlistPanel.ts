@@ -71,6 +71,7 @@ export class RHWatchlistPanel extends Panel {
         <td class="rh-num">${fmtUsd(token.marketCap)}</td>
         <td class="rh-num">${fmtUsd(token.liquidity)}</td>
         <td class="rh-num">${fmtUsd(token.volume24h)}</td>
+        <td class="rh-num ${token.turnover != null && token.turnover > 3 ? 'rh-warn' : ''}" title="24h volume over liquidity — above 3x is churn, not accumulation">${token.turnover != null ? `${token.turnover.toFixed(1)}x` : '—'}</td>
         <td class="rh-metric" title="${escapeHtml(metricTitle)}">
           <span class="rh-metric-label">${escapeHtml(token.primary.label ?? '')}</span>
           <span class="rh-metric-value ${token.primary.value == null ? 'rh-na' : ''}">${escapeHtml(metricValue)}</span>
@@ -83,7 +84,7 @@ export class RHWatchlistPanel extends Panel {
   private renderSection(label: string, tokens: RHToken[]): string {
     if (tokens.length === 0) return '';
     return `
-      <tr class="rh-section"><td colspan="8">${escapeHtml(label)} · ${tokens.length}</td></tr>
+      <tr class="rh-section"><td colspan="9">${escapeHtml(label)} · ${tokens.length}</td></tr>
       ${this.sorted(tokens).map(t => this.renderRow(t)).join('')}
     `;
   }
@@ -110,6 +111,7 @@ export class RHWatchlistPanel extends Panel {
               ${head('marketCap', 'MCap')}
               ${head('liquidity', 'Liq')}
               ${head('volume24h', 'Vol 24h')}
+              ${head('turnover', 'Turn')}
               <th class="rh-th-left">Primary metric</th>
               <th class="rh-th-left">48h</th>
             </tr>

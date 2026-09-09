@@ -211,6 +211,7 @@ export async function fetchProtocols(slugs) {
     out[slug] = {
       slug,
       name: base?.name || fee?.displayName || slug,
+      description: base?.description || null,
       category: base?.category || fee?.category || null,
       tvl,
       staking,

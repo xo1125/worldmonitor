@@ -69,6 +69,7 @@ If a panel shows "No news available":
 |-----|-------|------|
 | `/` | `index.html` → `src/main.ts` | Macro dashboard |
 | `/watch` | `watch.html` → `src/watch.ts` | Robinhood Chain watchlist |
+| `/watch/<symbol>` | same shell | One token's page (e.g. `/watch/pons`) |
 
 Both shells mount the same `App`, which picks the view from `window.location.pathname`.
 `watch.html` has its own title, description, canonical URL and JSON-LD so the link
@@ -103,8 +104,13 @@ is visible at a time.
 | `api/robinhood-x.js` | Apify-backed X follower counts |
 | `src/services/robinhood.ts` | Types + formatters |
 | `api/robinhood-detail.js` | Per-token drill-down: fee/revenue history, valuation multiples, CoinGecko attention |
-| `src/components/RH*Panel.ts` | The six panels |
-| `src/components/RHDetailModal.ts` | The drill-down modal (click any watchlist or revenue row) |
+| `src/components/RH*Panel.ts` | The three list panels: chain vitals, watchlist, revenue |
+| `src/components/RHTokenPage.ts` | Per-token page at `/watch/<symbol>` |
+
+**The list ranks; the token page explains.** Nothing appears in both. Movers,
+On-Chain and Attention panels were deleted because every figure they held already
+existed in the watchlist or belongs on a token page — turnover was the one signal
+only they carried, so it became a watchlist column.
 
 ### Adding a token
 

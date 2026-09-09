@@ -100,7 +100,9 @@ function watchRoutePlugin(): Plugin {
     configureServer(server) {
       server.middlewares.use((req, _res, next) => {
         const path = req.url?.split('?')[0];
-        if (path === '/watch' || path === '/watch/') req.url = '/watch.html';
+        // /watch and /watch/<symbol> both serve the same shell; the app reads
+        // the symbol from the path.
+        if (path && /^\/watch(\/[^/]*)?\/?$/.test(path)) req.url = '/watch.html';
         return next();
       });
     },

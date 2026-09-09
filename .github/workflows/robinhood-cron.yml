@@ -31,9 +31,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Record a watchlist snapshot
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           code=$(curl -sS -o /tmp/out.json -w '%{http_code}' --max-time 120 \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Authorization: Bearer $CRON_SECRET" \
             "$SITE/api/robinhood-snapshot")
           echo "HTTP $code"
           cat /tmp/out.json
@@ -45,11 +47,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Refresh X follower counts
-        # Costs Apify credits, so it never runs without an explicit secret.
-        if: ${{ secrets.CRON_SECRET != '' }}
+        env:
+          # The secrets context is not available in `if:` conditions, so the
+          # guard lives in the script. This step bills Apify per profile.
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "CRON_SECRET is not set — skipping (this call would bill Apify)."
+            exit 0
+          fi
           code=$(curl -sS -o /tmp/out.json -w '%{http_code}' --max-time 120 \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Authorization: Bearer $CRON_SECRET" \
             "$SITE/api/robinhood-x?refresh=1")
           echo "HTTP $code"
           cat /tmp/out.json

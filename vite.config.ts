@@ -1,4 +1,4 @@
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import { resolve } from 'path';
 import pkg from './package.json';
 
@@ -28,7 +28,9 @@ function htmlVariantPlugin(): Plugin {
 
   return {
     name: 'html-variant',
-    transformIndexHtml(html) {
+    transformIndexHtml(html, ctx) {
+      // watch.html carries its own title, description and structured data.
+      if (ctx.filename.endsWith('watch.html') || ctx.path.includes('watch.html')) return html;
       return html
         .replace(/<title>.*?<\/title>/, `<title>${meta.title}</title>`)
         .replace(/<meta name="title" content=".*?" \/>/, `<meta name="title" content="${meta.title}" />`)
@@ -86,17 +88,98 @@ function youtubeLivePlugin(): Plugin {
   };
 }
 
+/**
+ * Vercel functions don't run under `vite dev`, so the Robinhood endpoints are
+ * loaded directly and adapted between Node's req/res and the edge handler's
+ * Request/Response. Same code path as production, minus the platform.
+ */
+/** Serves /watch from watch.html in dev, matching the Vercel rewrite. */
+function watchRoutePlugin(): Plugin {
+  return {
+    name: 'watch-route',
+    configureServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        const path = req.url?.split('?')[0];
+        if (path === '/watch' || path === '/watch/') req.url = '/watch.html';
+        return next();
+      });
+    },
+  };
+}
+
+function robinhoodApiPlugin(): Plugin {
+  const ROUTES: Record<string, string> = {
+    '/api/robinhood-watchlist': './api/robinhood-watchlist.js',
+    '/api/robinhood-snapshot': './api/robinhood-snapshot.js',
+    '/api/robinhood-x': './api/robinhood-x.js',
+  };
+
+  return {
+    name: 'robinhood-api',
+    configureServer(server) {
+      // API handlers read process.env (as they do on Vercel), but Vite only
+      // exposes .env files to client code. Copy them across so secrets can live
+      // in the gitignored .env.local during local development.
+      const fileEnv = loadEnv(server.config.mode, process.cwd(), '');
+      for (const [key, value] of Object.entries(fileEnv)) {
+        if (process.env[key] === undefined) process.env[key] = value;
+      }
+
+      server.middlewares.use(async (req, res, next) => {
+        const path = req.url?.split('?')[0];
+        const modulePath = path ? ROUTES[path] : undefined;
+        if (!modulePath) return next();
+
+        try {
+          // No cache-busting query: a fresh module per request would reset the
+          // handler's in-memory cache every time and hide throttling bugs that
+          // only appear on a warm lambda. Vite invalidates on file change anyway.
+          const mod = await server.ssrLoadModule(modulePath);
+          const handler = mod.default;
+          const isEdge = mod.config?.runtime === 'edge';
+          const url = `http://localhost:${server.config.server.port ?? 3000}${req.url}`;
+
+          if (isEdge) {
+            const request = new Request(url, {
+              method: req.method,
+              headers: new Headers(req.headers as Record<string, string>),
+            });
+            const response: Response = await handler(request);
+            res.statusCode = response.status;
+            response.headers.forEach((value, key) => res.setHeader(key, value));
+            res.end(await response.text());
+          } else {
+            await handler({ ...req, url: req.url, headers: req.headers }, res);
+          }
+        } catch (error) {
+          console.error(`[dev] ${path} failed:`, error);
+          res.statusCode = 500;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ error: (error as Error).message }));
+        }
+      });
+    },
+  };
+}
+
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
-  plugins: [htmlVariantPlugin(), youtubeLivePlugin()],
+  plugins: [htmlVariantPlugin(), youtubeLivePlugin(), watchRoutePlugin(), robinhoodApiPlugin()],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
     },
   },
-  build: {},
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        watch: resolve(__dirname, 'watch.html'),
+      },
+    },
+  },
   server: {
     port: 3000,
     open: true,
@@ -179,6 +262,13 @@ export default defineConfig({
               });
               res.end(text);
             } catch (err: unknown) {
+              // On a connection timeout Vite's own proxy error handler has already
+              // responded, so writing again throws ERR_HTTP_HEADERS_SENT and takes
+              // the whole dev server down with it.
+              if (res.headersSent) {
+                res.end();
+                return;
+              }
               res.writeHead(502, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ error: String(err) }));
             }

@@ -63,6 +63,115 @@ If a panel shows "No news available":
 2. Look for `HTTP 403` or "Domain not allowed" errors
 3. Check if the domain is in `api/rss-proxy.js` allowlist
 
+## Routes
+
+| URL | Shell | View |
+|-----|-------|------|
+| `/` | `index.html` → `src/main.ts` | Macro dashboard |
+| `/watch` | `watch.html` → `src/watch.ts` | Robinhood Chain watchlist |
+
+Both shells mount the same `App`, which picks the view from `window.location.pathname`.
+`watch.html` has its own title, description, canonical URL and JSON-LD so the link
+previews correctly when shared — `htmlVariantPlugin` skips it for that reason.
+
+`vercel.json` rewrites `/watch` → `/watch.html`; `watchRoutePlugin` does the same in
+dev. The tab bar navigates with `pushState` between the two paths and handles
+back/forward. **The URL is the only source of truth for which view is shown** — a
+remembered tab would otherwise render the watchlist inside the macro page's markup.
+The legacy `?tab=robinhood` form still works and rewrites itself to `/watch`.
+
+Each tab loads its data only when first shown, so `/watch` never pays for the macro
+tab's feeds and market calls (and vice versa).
+
+## Robinhood Chain Tab
+
+The dashboard has two tabs: **MACRO** (the original panel set) and **ROBINHOOD**
+(the Robinhood Chain token watchlist). The tab bar sits between the header and
+the panel grid; each tab has its own grid (`#panelsGrid`, `#rhGrid`) and only one
+is visible at a time.
+
+### Files
+
+| File | Role |
+|------|------|
+| `api/_lib/rh-tokens.js` | Token registry — the single source of truth. Addresses, X handles, DefiLlama slugs, and which metric matters per project |
+| `api/_lib/rh-sources.js` | DexScreener / DefiLlama / RPC fetchers |
+| `api/_lib/rh-aggregate.js` | Builds the payload; merges partial failures from the previous one |
+| `api/_lib/rh-store.js` | Redis: snapshot history + X follower cache |
+| `api/robinhood-watchlist.js` | The endpoint the client polls (every 2 min, only while the tab is open) |
+| `api/robinhood-snapshot.js` | Cron: writes a history row every 30 min |
+| `api/robinhood-x.js` | Apify-backed X follower counts |
+| `src/services/robinhood.ts` | Types + formatters |
+| `src/components/RH*Panel.ts` | The six panels |
+
+### Adding a token
+
+Add an entry to `RH_TOKENS` in `api/_lib/rh-tokens.js`. The address must be the
+token contract on Robinhood Chain — verify it resolves on DexScreener first:
+
+```bash
+curl "https://api.dexscreener.com/latest/dex/tokens/<address>" | jq '.pairs[0].chainId'
+```
+
+`metricSource` decides where the primary metric comes from: `defillama:<slug>`,
+`onchain:burn`, `derived:backing`, `derived:utilisation`, `dex:liquidity`,
+`dex:volume`, `social`, or `none`. Anything unavailable renders as `—` with the
+reason in the cell tooltip — do not substitute a proxy number silently.
+
+### Data sources and their limits
+
+- **DexScreener** (no key, 300 req/min) — price, mcap, liquidity, volume, txns.
+  Queried **one address per request**: the endpoint caps responses at 30 pairs and
+  batching silently drops pairs, which understates aggregate liquidity.
+- **DefiLlama** (no key) — chain TVL/fees/DEX volume, and per-protocol TVL, staking,
+  borrowed, fees and revenue. Reserve protocols book their treasury under `staking`,
+  not `tvl` (NetNet reports 0 TVL, ~$57M staking), so read both.
+- **Public RPC** `rpc.mainnet.chain.robinhood.com` (chainId 4663) — supply, burns,
+  treasury balances. Batched `eth_call`, max ~24 calls per batch or the node 429s;
+  `robinhood-rpc.publicnode.com` is the fallback.
+- **Blockscout** (`robinhoodchain.blockscout.com`) is behind Cloudflare and cannot be
+  called server-side. **Holder counts have no free source** — do not add a panel that
+  claims to show them without solving this first (indexing `Transfer` logs over RPC
+  is the only real option).
+- **X followers** come from Apify; there is no free X API.
+
+### Environment variables
+
+```bash
+APIFY_TOKEN=apify_api_xxx          # required for X follower counts
+APIFY_X_ACTOR=apidojo~twitter-user-scraper   # optional, override the actor
+APIFY_X_INPUT_KEY=twitterHandles             # optional, actor's handle-list field
+CRON_SECRET=xxx                    # optional, guards the cron endpoints
+UPSTASH_REDIS_REST_URL=...         # already set for AI Insights; reused for history
+UPSTASH_REDIS_REST_TOKEN=...
+```
+
+Without Redis the tab still renders — it just has no deltas or sparklines, since
+every upstream reports levels rather than growth.
+
+### Apify cost and demo mode
+
+`apidojo/twitter-user-scraper` is **pay-per-event**, not free: $0.004 per profile
+lookup plus $0.0004 per dataset item. One run over the 17 handles costs roughly
+$0.07, so a daily cron is about $2/month and a twice-daily one about $4.20 —
+against the $5/month credit a free Apify account gets. The X cron is set to run
+once daily for that reason.
+
+**Demo mode:** when the account cannot be charged (free plan, trial exhausted),
+the actor still reports `SUCCEEDED` but writes `{"demo": true}` rows instead of
+profiles. `runApifyBatch` detects this and fails with a message naming the cause —
+do not treat it as a parser bug. Fixing it means adding a payment method or plan
+on Apify, or pointing `APIFY_X_ACTOR` at another actor.
+
+The actor also **silently truncates large batches** (17 handles returned 10),
+which is why handles are requested in chunks of 8, two runs at a time.
+
+### Crons
+
+`vercel.json` schedules the snapshot every 30 minutes and the X refresh every 12
+hours. **Hobby plans only run crons once a day**; on Hobby, either upgrade or drive
+these from an external scheduler hitting the same URLs with `?secret=$CRON_SECRET`.
+
 ## Running Locally
 ```bash
 npm run dev        # Start dev server

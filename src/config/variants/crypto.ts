@@ -94,13 +94,14 @@ export const DEFAULT_PANELS: Record<string, PanelConfig> = {
   'signal-momentum': { name: 'Momentum', enabled: true, priority: 1 },
   'signal-hashrate': { name: 'Hash Rate', enabled: true, priority: 1 },
   'signal-feargreed': { name: 'Fear & Greed', enabled: true, priority: 1 },
+  'signal-altseason': { name: 'Crypto (Alts)', enabled: true, priority: 1 },
 
   // ── Core panels (hero row — most important) ──
+  commodities: { name: 'Macro', enabled: true, priority: 1 },
   'btc-monitor': { name: 'BTC Monitor', enabled: true, priority: 1 },
-  'tokens-bluechips': { name: 'Main List', enabled: true, priority: 1 },
+  'tokens-bluechips': { name: 'Majors', enabled: true, priority: 1 },
   'etf-flows': { name: 'BTC ETF', enabled: true, priority: 1 },
   'stablecoin-supply': { name: 'Stablecoins', enabled: true, priority: 1 },
-  commodities: { name: 'Macro', enabled: true, priority: 1 },
 
   // ── Token Portfolios ──
   'tokens-defi': { name: 'DeFi Tokens', enabled: true, priority: 1 },

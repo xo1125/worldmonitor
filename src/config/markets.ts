@@ -19,9 +19,9 @@ export const COMMODITIES: Commodity[] = [
   { symbol: 'DX-Y.NYB', name: 'Dollar Index', display: 'DXY' },
   { symbol: '^VIX', name: 'VIX', display: 'VIX' },
   { symbol: 'GC=F', name: 'Gold', display: 'GOLD' },
+  { symbol: 'SI=F', name: 'Silver', display: 'SILVER' },
   { symbol: 'CL=F', name: 'Crude Oil', display: 'OIL' },
   { symbol: 'NG=F', name: 'Natural Gas', display: 'NATGAS' },
-  { symbol: 'SI=F', name: 'Silver', display: 'SILVER' },
 ];
 
 export const MARKET_SYMBOLS: MarketSymbol[] = [

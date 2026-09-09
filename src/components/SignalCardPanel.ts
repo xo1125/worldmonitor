@@ -60,14 +60,6 @@ export class SignalCardPanel extends Panel {
     else if (clamped <= 75) color = '#a3e635';  // Greed → lime
     else color = '#4ade80';                      // Extreme Greed → green
 
-    // Label
-    let label: string;
-    if (clamped <= 25) label = 'Extreme Fear';
-    else if (clamped <= 45) label = 'Fear';
-    else if (clamped <= 55) label = 'Neutral';
-    else if (clamped <= 75) label = 'Greed';
-    else label = 'Extreme Greed';
-
     return `
       <div class="fg-donut-container">
         <svg class="fg-donut" viewBox="0 0 ${center * 2} ${center * 2}">
@@ -79,10 +71,8 @@ export class SignalCardPanel extends Panel {
             stroke-dashoffset="0"
             stroke-linecap="round"
             transform="rotate(-90 ${center} ${center})" />
-          <text x="${center}" y="${center - 4}" text-anchor="middle" dominant-baseline="middle"
-            fill="${color}" font-size="18" font-weight="700" font-family="'JetBrains Mono', monospace">${clamped}</text>
-          <text x="${center}" y="${center + 14}" text-anchor="middle" dominant-baseline="middle"
-            fill="rgba(255,255,255,0.5)" font-size="8" font-weight="500">${label}</text>
+          <text x="${center}" y="${center}" text-anchor="middle" dominant-baseline="middle"
+            fill="${color}" font-size="20" font-weight="700" font-family="'JetBrains Mono', monospace">${clamped}</text>
         </svg>
       </div>
     `;

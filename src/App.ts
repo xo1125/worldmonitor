@@ -9,6 +9,7 @@ import {
   STORAGE_KEYS,
 } from '@/config';
 import { fetchCategoryFeeds, fetchMultipleStocks, fetchStablecoins, fetchCryptoSectors, fetchMacroSignals, fetchTokenCategories, fetchETFFlows, fetchPredictions } from '@/services';
+import { fetchRobinhoodWatchlist, relativeTime, type RHPayload } from '@/services/robinhood';
 import { clusterNewsHybrid } from '@/services/clustering';
 import { dataFreshness } from '@/services/data-freshness';
 import { loadFromStorage, saveToStorage } from '@/utils';
@@ -32,8 +33,24 @@ import {
   SignalCardPanel,
   TokenCategoryPanel,
   ETFFlowsPanel,
+  RHWatchlistPanel,
+  RHChainPanel,
+  RHRevenuePanel,
+  RHMoversPanel,
+  RHOnchainPanel,
+  RHSocialPanel,
 } from '@/components';
 import type { SearchResult } from '@/components/SearchModal';
+
+type TabId = 'macro' | 'robinhood';
+
+const TABS: Array<{ id: TabId; label: string; hint: string; path: string }> = [
+  { id: 'macro', label: 'MACRO', hint: 'BTC, ETFs, stablecoins, macro signals', path: '/' },
+  { id: 'robinhood', label: 'ROBINHOOD', hint: 'Robinhood Chain token watchlist', path: '/watch' },
+];
+
+const tabForPath = (pathname: string): TabId | null =>
+  TABS.find(t => t.path !== '/' && pathname.replace(/\/+$/, '') === t.path)?.id ?? null;
 
 export class App {
   private container: HTMLElement;
@@ -63,6 +80,10 @@ export class App {
   private isIdle = false;
   private readonly IDLE_PAUSE_MS = 2 * 60 * 1000; // 2 minutes - pause animations when idle
   private disabledSources: Set<string> = new Set();
+  private activeTab: TabId = 'macro';
+  private rhPanels: Record<string, Panel> = {};
+  private rhLoaded = false;
+  private macroLoaded = false;
 
   constructor(containerId: string) {
     const el = document.getElementById(containerId);
@@ -71,10 +92,12 @@ export class App {
 
     this.monitors = loadFromStorage<Monitor[]>(STORAGE_KEYS.monitors, []);
 
-    this.panelSettings = loadFromStorage<Record<string, PanelConfig>>(
+    const storedPanels = loadFromStorage<Record<string, PanelConfig>>(
       STORAGE_KEYS.panels,
       DEFAULT_PANELS
     );
+    // Merge any new panels from DEFAULT_PANELS that aren't in stored settings
+    this.panelSettings = { ...DEFAULT_PANELS, ...storedPanels };
     console.log('[App] Loaded panel settings from storage:', Object.entries(this.panelSettings).filter(([_, v]) => !v.enabled).map(([k]) => k));
 
     this.disabledSources = new Set(loadFromStorage<string[]>(STORAGE_KEYS.disabledFeeds, []));
@@ -86,7 +109,11 @@ export class App {
     this.setupStatusPanel();
     this.setupSearchModal();
     this.setupEventListeners();
-    await this.loadAllData();
+    this.setupTabs();
+
+    // Only the visible tab loads on boot. Opening /watch shouldn't pay for the
+    // macro tab's feeds, market calls and prediction markets.
+    if (this.activeTab === 'macro') await this.loadMacroData();
 
     this.setupRefreshIntervals();
   }
@@ -255,9 +282,17 @@ export class App {
           <button class="sources-btn" id="sourcesBtn">📡 SOURCES</button>
         </div>
       </div>
+      <div class="tab-bar" id="tabBar">
+        ${TABS.map(t => `
+          <button class="tab-btn" id="tab-${t.id}" data-tab="${t.id}" title="${t.hint}">${t.label}</button>
+        `).join('')}
+        <span class="tab-meta" id="tabMeta"></span>
+        <button class="tab-refresh" id="rhRefresh" title="Refresh Robinhood data now (bypasses the 2 min cache)">↻</button>
+      </div>
       <div class="main-content">
         <div class="map-section" id="mapSection" style="display:none"></div>
         <div class="panels-grid" id="panelsGrid"></div>
+        <div class="panels-grid rh-grid grid-hidden" id="rhGrid"></div>
       </div>
       <div class="modal-overlay" id="settingsModal">
         <div class="modal">
@@ -288,6 +323,7 @@ export class App {
     `;
 
     this.createPanels();
+    this.createRobinhoodPanels();
     this.renderPanelToggles();
     this.updateTime();
     this.timeIntervalId = setInterval(() => this.updateTime(), 1000);
@@ -297,6 +333,8 @@ export class App {
    * Clean up resources (for HMR/testing)
    */
   public destroy(): void {
+    for (const panel of Object.values(this.rhPanels)) panel.destroy();
+    this.rhPanels = {};
     this.isDestroyed = true;
 
     // Clear time display interval
@@ -380,7 +418,7 @@ export class App {
 
     // Token category panels
     const TOKEN_CATEGORY_PANELS: Array<[string, string]> = [
-      ['tokens-bluechips', 'Main List'],
+      ['tokens-bluechips', 'Majors'],
       ['tokens-defi', 'DeFi Tokens'],
       ['tokens-ai', 'AI Tokens'],
       ['tokens-other', 'Tokens (Other)'],
@@ -401,6 +439,7 @@ export class App {
       ['signal-momentum', 'Momentum'],
       ['signal-hashrate', 'Hash Rate'],
       ['signal-feargreed', 'Fear & Greed'],
+      ['signal-altseason', 'Crypto (Alts)'],
     ];
     for (const [panelId, panelTitle] of SIGNAL_PANELS) {
       this.panels[panelId] = new SignalCardPanel(panelId, panelTitle);
@@ -478,6 +517,159 @@ export class App {
     });
 
     this.applyPanelSettings();
+  }
+
+  /**
+   * The Robinhood tab lives in its own grid rather than in the shared panel set:
+   * panel order, drag state and the settings modal all key off DEFAULT_PANELS,
+   * and a second variant would have to fight all three. Two grids, one visible.
+   */
+  private createRobinhoodPanels(): void {
+    const grid = document.getElementById('rhGrid');
+    if (!grid) return;
+
+    this.rhPanels['rh-chain'] = new RHChainPanel();
+    this.rhPanels['rh-watchlist'] = new RHWatchlistPanel();
+    this.rhPanels['rh-movers'] = new RHMoversPanel();
+    this.rhPanels['rh-revenue'] = new RHRevenuePanel();
+    this.rhPanels['rh-onchain'] = new RHOnchainPanel();
+    this.rhPanels['rh-social'] = new RHSocialPanel();
+
+    for (const panel of Object.values(this.rhPanels)) {
+      grid.appendChild(panel.getElement());
+    }
+  }
+
+  private setupTabs(): void {
+    const params = new URLSearchParams(window.location.search);
+    const fromPath = tabForPath(window.location.pathname);
+    const fromQuery = params.get('tab');
+    // The URL is the only source of truth. Each view has its own HTML shell, so
+    // restoring a remembered tab at / would render the watchlist inside the macro
+    // page's markup and metadata.
+    const initial = (fromPath ?? TABS.find(t => t.id === fromQuery)?.id ?? 'macro') as TabId;
+
+    // Back/forward between / and /watch.
+    window.addEventListener('popstate', () => {
+      const tab = tabForPath(window.location.pathname) ?? 'macro';
+      this.switchTab(tab, { skipUrl: true });
+    });
+
+    document.querySelectorAll<HTMLElement>('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab as TabId;
+        if (tab) this.switchTab(tab);
+      });
+    });
+
+    document.getElementById('rhRefresh')?.addEventListener('click', () => {
+      void this.refreshRobinhood();
+    });
+
+    this.switchTab(initial, { replaceUrl: true });
+  }
+
+  private switchTab(tab: TabId, opts: { replaceUrl?: boolean; skipUrl?: boolean } = {}): void {
+    this.activeTab = tab;
+
+    // Toggled by class, not inline style: the responsive rules set
+    // `.panels-grid { display: flex !important }`, which beats an inline display.
+    const macroGrid = document.getElementById('panelsGrid');
+    const rhGrid = document.getElementById('rhGrid');
+    macroGrid?.classList.toggle('grid-hidden', tab !== 'macro');
+    rhGrid?.classList.toggle('grid-hidden', tab !== 'robinhood');
+    document.getElementById('rhRefresh')?.classList.toggle('hidden', tab !== 'robinhood');
+
+    document.querySelectorAll<HTMLElement>('.tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+
+    if (!opts.skipUrl) {
+      const url = new URL(window.location.href);
+      url.pathname = TABS.find(t => t.id === tab)?.path ?? '/';
+      // ?tab= is the old form; drop it now that the path carries the state.
+      url.searchParams.delete('tab');
+      window.history[opts.replaceUrl ? 'replaceState' : 'pushState']({}, '', url);
+    }
+
+    if (tab === 'macro' && !this.macroLoaded) void this.loadMacroData();
+
+    // Load on first view rather than on boot: the macro tab shouldn't pay for
+    // the Robinhood fan-out on every page load.
+    if (tab === 'robinhood' && !this.rhLoaded) {
+      this.rhLoaded = true;
+      void this.loadRobinhoodData();
+    } else if (tab === 'robinhood') {
+      this.updateTabMeta();
+    } else {
+      const meta = document.getElementById('tabMeta');
+      if (meta) meta.textContent = '';
+    }
+  }
+
+  private lastRHPayload: RHPayload | null = null;
+
+  private updateTabMeta(): void {
+    const meta = document.getElementById('tabMeta');
+    if (!meta) return;
+    if (this.activeTab !== 'robinhood' || !this.lastRHPayload) {
+      meta.textContent = '';
+      return;
+    }
+    const p = this.lastRHPayload;
+    const bits = [
+      `${p.coverage.priced}/${p.coverage.total} priced`,
+      `updated ${relativeTime(p.updatedAt)}`,
+    ];
+    if (p.coverage.historySamples > 0) bits.push(`${p.coverage.historySamples} snapshots`);
+    if (p.carriedFields) bits.push(`${p.carriedFields} carried`);
+    if (p.stale) bits.push('stale');
+    meta.textContent = bits.join(' · ');
+    meta.classList.toggle('tab-meta-stale', Boolean(p.stale));
+  }
+
+  /** Manual refresh: force a rebuild upstream rather than waiting out the poll. */
+  private async refreshRobinhood(): Promise<void> {
+    const btn = document.getElementById('rhRefresh');
+    if (btn?.classList.contains('spinning')) return;
+    btn?.classList.add('spinning');
+    try {
+      this.rhLoaded = true;
+      await this.loadRobinhoodData(true);
+    } finally {
+      btn?.classList.remove('spinning');
+    }
+  }
+
+  /** Loads the macro tab once; repeat calls are handled by the refresh loops. */
+  private async loadMacroData(): Promise<void> {
+    if (this.macroLoaded) return;
+    this.macroLoaded = true;
+    try {
+      await this.loadAllData();
+    } catch (e) {
+      this.macroLoaded = false;
+      throw e;
+    }
+  }
+
+  private async loadRobinhoodData(force = false): Promise<void> {
+    const payload = await fetchRobinhoodWatchlist(force);
+    if (!payload) {
+      for (const panel of Object.values(this.rhPanels)) {
+        panel.showError('Robinhood Chain feed unavailable');
+      }
+      return;
+    }
+
+    this.lastRHPayload = payload;
+    (this.rhPanels['rh-chain'] as RHChainPanel)?.renderChain(payload.chain);
+    (this.rhPanels['rh-watchlist'] as RHWatchlistPanel)?.renderTokens(payload.tokens);
+    (this.rhPanels['rh-movers'] as RHMoversPanel)?.renderMovers(payload.tokens);
+    (this.rhPanels['rh-revenue'] as RHRevenuePanel)?.renderProtocols(payload.protocols);
+    (this.rhPanels['rh-onchain'] as RHOnchainPanel)?.renderOnchain(payload.tokens);
+    (this.rhPanels['rh-social'] as RHSocialPanel)?.renderSocial(payload.tokens);
+    this.updateTabMeta();
   }
 
   private getSavedPanelOrder(): string[] {
@@ -1017,6 +1209,7 @@ export class App {
           'Momentum': 'signal-momentum',
           'Hash Rate': 'signal-hashrate',
           'Fear & Greed': 'signal-feargreed',
+          'Crypto (Alts)': 'signal-altseason',
         };
         for (const signal of macroData.signals) {
           const panelId = signalPanelMap[signal.name];
@@ -1112,9 +1305,10 @@ export class App {
 
   private setupRefreshIntervals(): void {
     // Always refresh news, markets, predictions
-    this.scheduleRefresh('news', () => this.loadNews(), REFRESH_INTERVALS.feeds);
-    this.scheduleRefresh('markets', () => this.loadMarkets(), REFRESH_INTERVALS.markets);
-    this.scheduleRefresh('predictions', () => this.loadPredictions(), REFRESH_INTERVALS.predictions);
+    const macroReady = () => this.macroLoaded;
+    this.scheduleRefresh('news', () => this.loadNews(), REFRESH_INTERVALS.feeds, macroReady);
+    this.scheduleRefresh('markets', () => this.loadMarkets(), REFRESH_INTERVALS.markets, macroReady);
+    this.scheduleRefresh('predictions', () => this.loadPredictions(), REFRESH_INTERVALS.predictions, macroReady);
 
     // Crypto-specific refreshes
     this.scheduleRefresh('token-categories', async () => {
@@ -1126,7 +1320,7 @@ export class App {
       } catch (e) {
         console.error('[App] Token categories refresh failed:', e);
       }
-    }, 120000); // 2 min (matches API cache)
+    }, 120000, macroReady); // 2 min (matches API cache)
 
     this.scheduleRefresh('etf-flows', async () => {
       try {
@@ -1137,7 +1331,7 @@ export class App {
       } catch (e) {
         console.error('[App] ETF flows refresh failed:', e);
       }
-    }, 900000); // 15 min
+    }, 900000, macroReady); // 15 min
 
     this.scheduleRefresh('btc-monitor', async () => {
       try {
@@ -1149,7 +1343,13 @@ export class App {
       } catch (e) {
         console.error('[App] BTC levels refresh failed:', e);
       }
-    }, 300000); // 5 min
+    }, 300000, macroReady); // 5 min
+
+    // The condition argument keeps the Robinhood fan-out idle while the macro
+    // tab is showing; scheduleRefresh already backs off on hidden documents.
+    this.scheduleRefresh('rh-watchlist', async () => {
+      await this.loadRobinhoodData();
+    }, 120000, () => this.activeTab === 'robinhood' && this.rhLoaded);
 
     this.scheduleRefresh('macro-signals', async () => {
       try {
@@ -1162,6 +1362,7 @@ export class App {
             'Momentum': 'signal-momentum',
             'Hash Rate': 'signal-hashrate',
             'Fear & Greed': 'signal-feargreed',
+            'Crypto (Alts)': 'signal-altseason',
           };
           for (const signal of macroData.signals) {
             const panelId = signalPanelMap[signal.name];
@@ -1173,6 +1374,6 @@ export class App {
       } catch (e) {
         console.error('[App] Macro signals refresh failed:', e);
       }
-    }, 300000); // 5 min
+    }, 300000, macroReady); // 5 min
   }
 }

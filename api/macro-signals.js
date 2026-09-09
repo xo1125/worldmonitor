@@ -160,25 +160,76 @@ function calcRSI(closes, period = 14) {
 }
 
 /**
- * Calculate rolling RSI values over a window of days.
- * Returns an array of RSI values, one per day in the window.
- * Each RSI is computed using all closes up to that point.
+ * Calculate rolling RSI values over a window of days — O(n) single-pass.
+ * Uses Wilder's smoothing incrementally instead of recomputing from scratch.
  */
 function calcRollingRSI(closes, period = 14, window = 30) {
-  const rsiValues = [];
-  // We need at least period+1 closes to compute a single RSI value
-  const minLen = period + 1;
-  const startIdx = Math.max(minLen, closes.length - window);
+  if (closes.length < period + 1) return [50];
 
-  for (let i = startIdx; i <= closes.length; i++) {
-    const slice = closes.slice(0, i);
-    rsiValues.push(calcRSI(slice, period));
+  // Compute all price changes once
+  const changes = [];
+  for (let i = 1; i < closes.length; i++) {
+    changes.push(closes[i] - closes[i - 1]);
   }
 
-  return rsiValues;
+  // Seed: initial average gain/loss over first `period` changes
+  let avgGain = 0, avgLoss = 0;
+  for (let i = 0; i < period; i++) {
+    if (changes[i] > 0) avgGain += changes[i];
+    else avgLoss += Math.abs(changes[i]);
+  }
+  avgGain /= period;
+  avgLoss /= period;
+
+  // Walk forward, recording RSI at each step
+  const allRSI = [];
+  const toRSI = (ag, al) => al === 0 ? 100 : 100 - (100 / (1 + ag / al));
+  allRSI.push(toRSI(avgGain, avgLoss));
+
+  for (let i = period; i < changes.length; i++) {
+    const gain = changes[i] > 0 ? changes[i] : 0;
+    const loss = changes[i] < 0 ? Math.abs(changes[i]) : 0;
+    avgGain = (avgGain * (period - 1) + gain) / period;
+    avgLoss = (avgLoss * (period - 1) + loss) / period;
+    allRSI.push(toRSI(avgGain, avgLoss));
+  }
+
+  // Return last `window` values
+  return allRSI.slice(-window);
 }
 
-function computeSignals(quotes, hashRateData, fearGreedData) {
+// Known stablecoin IDs in CoinGecko's market_cap_percentage
+// Stablecoins to exclude from alt mcap (USD-pegged only)
+const STABLECOIN_IDS = new Set(['usdt', 'usdc', 'dai', 'busd', 'tusd', 'usdp', 'usdd', 'fdusd', 'pyusd', 'gusd', 'frax', 'lusd', 'susd', 'usde', 'eurs']);
+
+async function fetchAltSeasonData() {
+  try {
+    // Get market data from CoinGecko global
+    const res = await fetch('https://api.coingecko.com/api/v3/global');
+    if (!res.ok) return null;
+    const data = await res.json();
+    const d = data.data;
+    const btcDom = d.market_cap_percentage?.btc || 0;
+    const ethDom = d.market_cap_percentage?.eth || 0;
+    const totalMcap = d.total_market_cap?.usd || 0;
+    const mcapChange24h = d.market_cap_change_percentage_24h_usd || 0;
+
+    // Sum stablecoin + LST dominance to exclude them
+    let stableDom = 0;
+    for (const [key, val] of Object.entries(d.market_cap_percentage || {})) {
+      if (STABLECOIN_IDS.has(key)) stableDom += val;
+    }
+
+    // Crypto ex BTC, ETH, Stables = total - BTC - ETH - stables
+    const exDom = 100 - btcDom - ethDom - stableDom;
+    const altMcap = totalMcap * Math.max(exDom, 0) / 100;
+    return { btcDom, ethDom, stableDom, totalMcap, altMcap, mcapChange24h };
+  } catch {
+    return null;
+  }
+}
+
+function computeSignals(quotes, hashRateData, fearGreedData, altSeasonData) {
   const jpy = quotes['JPY=X'];
   const btc = quotes['BTC-USD'];
   const qqq = quotes['QQQ'];
@@ -187,40 +238,54 @@ function computeSignals(quotes, hashRateData, fearGreedData) {
   const signals = [];
 
   // Signal 1: Liquidity Condition (JPY ROC)
+  // JPY=X is USD/JPY: rising = yen weakening (normal), falling = yen strengthening (squeeze)
   if (jpy) {
     const jpyROC = calcROC(jpy.closes, 30);
-    const isSqueezing = jpyROC > 2; // Yen strengthening fast
+    const isSqueezing = jpyROC < -3; // Yen strengthening (USD/JPY falling)
     signals.push({
       name: 'Liquidity',
       label: isSqueezing ? 'SQUEEZE' : 'NORMAL',
       status: isSqueezing ? 'bearish' : 'bullish',
-      value: `JPY 30d ROC: ${jpyROC.toFixed(2)}%`,
+      value: `JPY 30d ROC: ${jpyROC > 0 ? '+' : ''}${jpyROC.toFixed(2)}%`,
       detail: isSqueezing ? 'Yen strengthening → carry trade unwind risk' : 'Yen stable → no liquidity headwind',
       sparkline: jpy.closes.slice(-30),
       supportingData: {
-        'JPY/USD': `${jpy.price?.toFixed(2)}`,
-        '30d ROC': `${jpyROC.toFixed(2)}%`,
-        '7d ROC': `${calcROC(jpy.closes, 7).toFixed(2)}%`,
+        'USD/JPY': `${jpy.price?.toFixed(2)}`,
+        '30d ROC': `${jpyROC > 0 ? '+' : ''}${jpyROC.toFixed(2)}%`,
+        '7d ROC': `${calcROC(jpy.closes, 7) > 0 ? '+' : ''}${calcROC(jpy.closes, 7).toFixed(2)}%`,
       },
     });
   }
 
   // Signal 2: Flow Structure (BTC vs QQQ)
+  // Detects divergence in either direction — large spread means decoupling
   if (btc && qqq) {
     const btcReturn = calcROC(btc.closes, 5);
     const qqqReturn = calcROC(qqq.closes, 5);
-    const isGap = qqqReturn > 0 && btcReturn < -5;
+    const spread = Math.abs(btcReturn - qqqReturn);
+    const isGap = spread > 8; // >8% divergence in either direction
+    const btcLeading = btcReturn > qqqReturn;
+
+    let detail;
+    if (!isGap) {
+      detail = 'BTC & stocks moving together';
+    } else if (btcLeading) {
+      detail = 'BTC decoupling up from equities → watch for mean reversion';
+    } else {
+      detail = 'Stocks holding, BTC flushing → risk of further downside';
+    }
+
     signals.push({
       name: 'Flow Structure',
       label: isGap ? 'PASSIVE GAP' : 'ALIGNED',
-      status: isGap ? 'bearish' : 'bullish',
-      value: `BTC 1w: ${btcReturn.toFixed(1)}% | QQQ 1w: ${qqqReturn.toFixed(1)}%`,
-      detail: isGap ? 'Stocks holding, BTC flushing → risk of further downside' : 'BTC & stocks moving together',
+      status: isGap ? 'neutral' : 'bullish',
+      value: `BTC 1w: ${btcReturn >= 0 ? '+' : ''}${btcReturn.toFixed(1)}% | QQQ 1w: ${qqqReturn >= 0 ? '+' : ''}${qqqReturn.toFixed(1)}%`,
+      detail,
       sparkline: btc.closes.slice(-30),
       supportingData: {
-        'BTC 1w': `${btcReturn.toFixed(1)}%`,
-        'QQQ 1w': `${qqqReturn.toFixed(1)}%`,
-        'Spread': `${(btcReturn - qqqReturn).toFixed(1)}%`,
+        'BTC 1w': `${btcReturn >= 0 ? '+' : ''}${btcReturn.toFixed(1)}%`,
+        'QQQ 1w': `${qqqReturn >= 0 ? '+' : ''}${qqqReturn.toFixed(1)}%`,
+        'Spread': `${spread.toFixed(1)}%`,
       },
     });
   }
@@ -265,22 +330,31 @@ function computeSignals(quotes, hashRateData, fearGreedData) {
 
     const isOverbought = rsi > 70;
     const isOversold = rsi < 30;
+    const mayerWeak = mayerMultiple < 0.85; // Price well below SMA200
+    const mayerStrong = mayerMultiple > 1.4; // Price well above SMA200
 
-    // Contrarian logic: oversold = bullish (buy opportunity), overbought = bearish (overextended)
-    const label = isOverbought ? 'OVERBOUGHT' : isOversold ? 'OVERSOLD' : 'NEUTRAL';
-    const status = isOversold ? 'bullish' : isOverbought ? 'bearish' : 'neutral';
-
-    let detail;
-    if (isOversold) {
+    // Combined RSI + Mayer logic
+    let label, status, detail;
+    if (isOverbought || mayerStrong) {
+      label = 'OVERBOUGHT';
+      status = 'bearish';
+      detail = `RSI ${rsi.toFixed(0)} / Mayer ${mayerMultiple.toFixed(2)} → momentum overextended`;
+    } else if (isOversold) {
+      label = 'OVERSOLD';
+      status = 'bullish';
       detail = `RSI ${rsi.toFixed(0)} oversold → contrarian buy signal. Mayer ${mayerMultiple.toFixed(2)}`;
-    } else if (isOverbought) {
-      detail = `RSI ${rsi.toFixed(0)} overbought → momentum overextended. Mayer ${mayerMultiple.toFixed(2)}`;
-    } else if (rsi >= 55) {
-      detail = `RSI ${rsi.toFixed(0)} tilting bullish. Mayer Multiple ${mayerMultiple.toFixed(2)}`;
-    } else if (rsi <= 45) {
-      detail = `RSI ${rsi.toFixed(0)} tilting bearish. Mayer Multiple ${mayerMultiple.toFixed(2)}`;
+    } else if (mayerWeak) {
+      label = 'WEAK';
+      status = 'bearish';
+      detail = `Price ${((1 - mayerMultiple) * 100).toFixed(0)}% below SMA200 → weak trend. RSI ${rsi.toFixed(0)}`;
+    } else if (rsi >= 55 && mayerMultiple >= 1.0) {
+      label = 'STRONG';
+      status = 'bullish';
+      detail = `RSI ${rsi.toFixed(0)} bullish, above SMA200. Mayer ${mayerMultiple.toFixed(2)}`;
     } else {
-      detail = `RSI ${rsi.toFixed(0)} neutral zone. Mayer Multiple ${mayerMultiple.toFixed(2)}`;
+      label = 'NEUTRAL';
+      status = 'neutral';
+      detail = `RSI ${rsi.toFixed(0)} / Mayer ${mayerMultiple.toFixed(2)} → no clear trend`;
     }
 
     signals.push({
@@ -380,6 +454,37 @@ function computeSignals(quotes, hashRateData, fearGreedData) {
     });
   }
 
+  // Signal 8: Crypto ex BTC/ETH/Stables market cap
+  if (altSeasonData) {
+    const { altMcap, mcapChange24h, totalMcap } = altSeasonData;
+    const altMcapB = altMcap / 1e9;
+    const totalMcapT = totalMcap / 1e12;
+    const altPct = totalMcap > 0 ? (altMcap / totalMcap * 100) : 0;
+
+    // Classify based on alt share of total market
+    const isStrong = altPct > 30;
+    const isWeak = altPct < 20;
+
+    const fmtB = (v) => v >= 1000 ? `$${(v / 1000).toFixed(2)}T` : `$${v.toFixed(0)}B`;
+
+    signals.push({
+      name: 'Crypto (Alts)',
+      label: isStrong ? 'ALTS STRONG' : isWeak ? 'ALTS WEAK' : 'MIXED',
+      status: isStrong ? 'bullish' : isWeak ? 'bearish' : 'neutral',
+      value: fmtB(altMcapB),
+      detail: isStrong ? 'Alt share above 30% → capital rotating into alts'
+        : isWeak ? 'Alt share below 20% → capital concentrated in BTC/ETH'
+        : 'Alt share between 20-30% → mixed market rotation',
+      sparkline: btc ? btc.closes.slice(-30) : [],
+      supportingData: {
+        'Alt MCap': fmtB(altMcapB),
+        'Share': `${altPct.toFixed(1)}%`,
+        'Total': `$${totalMcapT.toFixed(2)}T`,
+        'MCap 24h': `${mcapChange24h >= 0 ? '+' : ''}${mcapChange24h.toFixed(1)}%`,
+      },
+    });
+  }
+
   // Overall verdict
   const allBullish = signals.every(s => s.status === 'bullish');
   const verdict = allBullish ? 'BUY' : 'CASH';
@@ -403,17 +508,18 @@ export default async function handler(req) {
 
   try {
     // Fetch all quotes + hashrate + fear/greed in parallel
-    const [yahooResults, hashRateData, fearGreedData] = await Promise.all([
+    const [yahooResults, hashRateData, fearGreedData, altSeasonData] = await Promise.all([
       Promise.all(TICKERS.map(fetchYahooQuote)),
       fetchBTCHashRate(),
       fetchFearGreedIndex(),
+      fetchAltSeasonData(),
     ]);
     const quotes = {};
     TICKERS.forEach((ticker, i) => {
       if (yahooResults[i]) quotes[ticker] = yahooResults[i];
     });
 
-    const signalResult = computeSignals(quotes, hashRateData, fearGreedData);
+    const signalResult = computeSignals(quotes, hashRateData, fearGreedData, altSeasonData);
     const responseBody = JSON.stringify(signalResult);
 
     // Cache the result

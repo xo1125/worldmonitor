@@ -24,3 +24,11 @@ export * from './TaoSubnetPanel';
 export * from './ETFFlowsPanel';
 export * from './BTCMonitorPanel';
 export * from './ReportingPanel';
+
+// Robinhood Chain tab
+export * from './RHWatchlistPanel';
+export * from './RHChainPanel';
+export * from './RHRevenuePanel';
+export * from './RHMoversPanel';
+export * from './RHOnchainPanel';
+export * from './RHSocialPanel';

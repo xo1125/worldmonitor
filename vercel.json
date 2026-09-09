@@ -1,0 +1,19 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/robinhood-snapshot",
+      "schedule": "0,30 * * * *"
+    },
+    {
+      "path": "/api/robinhood-x?refresh=1",
+      "schedule": "0 13 * * *"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/watch",
+      "destination": "/watch.html"
+    }
+  ]
+}

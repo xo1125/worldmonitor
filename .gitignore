@@ -10,3 +10,4 @@ dist/
 .cursor/
 .env.vercel-backup
 .env*.local
+.env.tmp

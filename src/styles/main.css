@@ -517,7 +517,7 @@ body.animations-paused *::after {
 
 .panels-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   grid-auto-rows: minmax(200px, 380px);
   gap: 4px;
   padding: 4px;
@@ -842,6 +842,7 @@ body.animations-paused *::after {
   min-height: 350px;
   max-height: none;
 }
+
 
 /* Live News Panel */
 .live-news-switcher {
@@ -6743,6 +6744,39 @@ a.prediction-link:hover {
     grid-template-columns: repeat(2, 1fr);
     gap: 6px;
   }
+
+  /* === Truncate ETF panel: hide individual ETF rows, keep aggregate === */
+  .etf-table {
+    display: none !important;
+  }
+
+  /* === Truncate Stablecoins: hide breakdown rows, keep header + health === */
+  .supply-breakdown {
+    display: none !important;
+  }
+  .supply-header-row {
+    display: none !important;
+  }
+
+  /* === Truncate BTC Monitor: hide levels table + sparkline === */
+  .btc-levels-section {
+    display: none !important;
+  }
+  .btc-sparkline-section {
+    display: none !important;
+  }
+
+  /* === News panels: cap height to ~3 stories === */
+  .panel[data-panel="trading"] .panel-content,
+  .panel[data-panel="finance"] .panel-content,
+  .panel[data-panel="regulation"] .panel-content {
+    max-height: 260px !important;
+    overflow: hidden !important;
+  }
+  .panel[data-panel="polymarket"] .panel-content {
+    max-height: 320px !important;
+    overflow: hidden !important;
+  }
 }
 
 /* Extra small screens */
@@ -12559,9 +12593,16 @@ body.has-critical-banner .panels-grid {
 
 /* ── Auto-expand hero panels ── */
 .panel[data-panel="watchlist"]:not(.resized),
-.panel[data-panel="btc-monitor"]:not(.resized),
 .panel[data-panel="crypto"]:not(.resized) {
   grid-row: span 2;
+}
+
+/* BTC Monitor: compact on desktop — hide levels table + sparkline */
+@media (pointer: fine) {
+  .panel[data-panel="btc-monitor"] .btc-levels-section,
+  .panel[data-panel="btc-monitor"] .btc-sparkline-section {
+    display: none;
+  }
 }
 
 /* ── BTC Monitor Panel ── */
@@ -13175,4 +13216,327 @@ body.has-critical-banner .panels-grid {
     font-size: 9px;
     padding: 1px 5px;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Robinhood Chain tab
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tab-btn:hover {
+  color: var(--text);
+}
+
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--green);
+}
+
+.tab-meta {
+  margin-left: auto;
+  color: var(--text-dim);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.tab-meta-stale {
+  color: var(--yellow);
+}
+
+.tab-refresh {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1;
+  margin-left: 8px;
+  padding: 3px 7px;
+}
+
+.tab-refresh:hover {
+  color: var(--green);
+  border-color: var(--green);
+}
+
+.tab-refresh.hidden {
+  display: none;
+}
+
+.tab-refresh.spinning {
+  animation: tab-refresh-spin 0.9s linear infinite;
+  color: var(--green);
+  pointer-events: none;
+}
+
+@keyframes tab-refresh-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Wins over the responsive `.panels-grid { display: flex !important }` rules. */
+.panels-grid.grid-hidden {
+  display: none !important;
+}
+
+/* Wider default cells: the watchlist table carries more columns than the
+   macro panels, and the metric column needs room for a label plus a value. */
+.rh-grid {
+  grid-auto-rows: minmax(200px, 420px);
+}
+
+.rh-grid [data-panel='rh-watchlist'] {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+/* Six numeric columns don't fit a single grid cell without clipping. */
+.rh-grid [data-panel='rh-revenue'] {
+  grid-column: span 2;
+}
+
+@media (max-width: 900px) {
+  .rh-grid [data-panel='rh-watchlist'],
+  .rh-grid [data-panel='rh-revenue'] {
+    grid-column: span 1;
+  }
+}
+
+.rh-table-wrap {
+  overflow: auto;
+  height: 100%;
+}
+
+.rh-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rh-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
+  color: var(--text-dim);
+  font-weight: normal;
+  text-align: right;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.rh-table th.rh-th-left,
+.rh-table td.rh-th-left {
+  text-align: left;
+}
+
+.rh-sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.rh-sortable:hover {
+  color: var(--text);
+}
+
+.rh-table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rh-table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.rh-table td.rh-sym,
+.rh-table td.rh-metric {
+  text-align: left;
+}
+
+.rh-sym a {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.rh-sym a:hover {
+  color: var(--green);
+}
+
+.rh-project {
+  display: block;
+  color: var(--text-dim);
+  font-size: 9px;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rh-section td {
+  color: var(--text-dim);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  padding-top: 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.rh-row-nomarket td {
+  opacity: 0.55;
+}
+
+.rh-metric-label {
+  display: block;
+  color: var(--text-dim);
+  font-size: 9px;
+}
+
+.rh-metric-value {
+  color: var(--text);
+}
+
+.rh-na {
+  color: var(--text-dim);
+}
+
+.rh-up { color: var(--green); }
+.rh-down { color: var(--red); }
+.rh-flat { color: var(--text-dim); }
+.rh-warn { color: var(--yellow); }
+
+.rh-spark-cell {
+  width: 70px;
+  padding-right: 8px !important;
+}
+
+.rh-spark { display: block; }
+.rh-spark-up { color: var(--green); }
+.rh-spark-down { color: var(--red); }
+
+.rh-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-dim);
+  font-size: 9px;
+}
+
+.rh-tag-muted {
+  opacity: 0.6;
+}
+
+.rh-table a {
+  color: var(--text);
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.25);
+}
+
+.rh-table a:hover {
+  color: var(--green);
+  border-bottom-color: var(--green);
+}
+
+/* Chain vitals tiles */
+.rh-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 1px;
+  background: var(--border);
+}
+
+.rh-tile {
+  background: var(--surface);
+  padding: 8px 10px;
+}
+
+.rh-tile-label {
+  color: var(--text-dim);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rh-tile-value {
+  font-size: 15px;
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rh-tile-sub {
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-top: 1px;
+}
+
+.rh-chain-spark {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--green);
+}
+
+.rh-subhead {
+  color: var(--text-dim);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  padding: 8px 6px 2px;
+}
+
+.rh-note {
+  color: var(--text-dim);
+  font-size: 10px;
+  padding: 8px 6px;
+  line-height: 1.5;
+}
+
+.rh-empty {
+  padding: 16px;
+  color: var(--text-dim);
+}
+
+.rh-empty-title {
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.rh-empty-body {
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.rh-empty-body code {
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 4px;
+  border-radius: 2px;
 }

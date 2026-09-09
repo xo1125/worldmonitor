@@ -1,6 +1,6 @@
 import type { MarketData, CryptoData, StablecoinData, CryptoSectorData, MacroSignalResult, PortfolioData, TaoSubnet } from '@/types';
 import type { TokenCategoryData } from '@/components/TokenCategoryPanel';
-import type { PortfolioCategory } from '@/config/markets';
+import type { PortfolioCategory, PortfolioTokenConfig } from '@/config/markets';
 import { API_URLS, CRYPTO_MAP, CRYPTO_IDS, STABLECOIN_MAP, CRYPTO_SECTORS, WATCHLIST_IDS, PORTFOLIO_MAP, PORTFOLIO_CATEGORY_ORDER, CATEGORY_PANEL_IDS, TAO_SUBNETS } from '@/config';
 import { fetchWithProxy } from '@/utils';
 
@@ -365,9 +365,37 @@ export interface TokenCategoryResult {
   tokens: TokenCategoryData[];
 }
 
+// Fetch custom token overrides from Telegram bot config
+async function fetchCustomTokens(): Promise<Record<string, PortfolioTokenConfig>> {
+  try {
+    const res = await fetch('/api/dashboard-config');
+    if (!res.ok) return {};
+    const data = await res.json();
+    // Convert to PortfolioTokenConfig format
+    const result: Record<string, PortfolioTokenConfig> = {};
+    if (data.tokens) {
+      for (const [id, info] of Object.entries(data.tokens as Record<string, { name: string; symbol: string; category: PortfolioCategory; conviction?: 'high' | 'low' }>)) {
+        result[id] = {
+          name: info.name,
+          symbol: info.symbol,
+          category: info.category,
+          ...(info.conviction && { conviction: info.conviction }),
+        };
+      }
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
 export async function fetchTokenCategories(): Promise<TokenCategoryResult[]> {
   try {
-    const ids = Object.keys(PORTFOLIO_MAP).join(',');
+    // Merge hardcoded tokens with custom tokens from Telegram bot
+    const customTokens = await fetchCustomTokens();
+    const mergedMap = { ...PORTFOLIO_MAP, ...customTokens };
+
+    const ids = Object.keys(mergedMap).join(',');
     const url = `/api/portfolio-markets?ids=${ids}`;
     const response = await fetchWithProxy(url);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -386,7 +414,7 @@ export async function fetchTokenCategories(): Promise<TokenCategoryResult[]> {
 
     // Group by category
     const grouped = new Map<PortfolioCategory, TokenCategoryData[]>();
-    for (const [id, info] of Object.entries(PORTFOLIO_MAP)) {
+    for (const [id, info] of Object.entries(mergedMap)) {
       const coin = coinMap.get(id);
       const token: TokenCategoryData = {
         name: info.name,

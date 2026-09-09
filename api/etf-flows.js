@@ -91,7 +91,31 @@ async function fetchSoSoValue() {
     });
 
     const aggFlow = num(d.dailyNetInflow);
-    console.log(`[ETF] SoSoValue OK: ${etfs.length} ETFs, net flow: ${aggFlow}`);
+    // SoSoValue reports previous trading day's settled data
+    // Compute the last US trading day (skip weekends + market holidays)
+    const US_MARKET_HOLIDAYS_2026 = new Set([
+      '2026-01-01', // New Year's Day
+      '2026-01-19', // MLK Day
+      '2026-02-16', // Presidents' Day
+      '2026-04-03', // Good Friday
+      '2026-05-25', // Memorial Day
+      '2026-06-19', // Juneteenth
+      '2026-07-03', // Independence Day (observed)
+      '2026-09-07', // Labor Day
+      '2026-11-26', // Thanksgiving
+      '2026-12-25', // Christmas
+    ]);
+    const et = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    et.setDate(et.getDate() - 1); // Start from yesterday
+    // Walk back until we hit a trading day (not weekend, not holiday)
+    for (let i = 0; i < 10; i++) {
+      const dow = et.getDay();
+      const iso = et.toISOString().split('T')[0];
+      if (dow !== 0 && dow !== 6 && !US_MARKET_HOLIDAYS_2026.has(iso)) break;
+      et.setDate(et.getDate() - 1);
+    }
+    const dataDate = et.toISOString().split('T')[0];
+    console.log(`[ETF] SoSoValue OK: ${etfs.length} ETFs, net flow: ${aggFlow}, dataDate: ${dataDate}`);
 
     return {
       source: 'sosovalue',
@@ -103,6 +127,7 @@ async function fetchSoSoValue() {
         cumNetInflow: num(d.cumNetInflow) ?? 0,
         etfCount: etfs.length,
       },
+      dataDate,
       lastUpdated: new Date().toISOString(),
     };
   } catch (err) {

@@ -17,6 +17,11 @@ export class RHWatchlistPanel extends Panel {
   private sortKey: SortKey = 'marketCap';
   private sortDir: SortDir = 'desc';
   private tokens: RHToken[] = [];
+  private onSelect: ((symbol: string) => void) | null = null;
+
+  public setOnSelect(fn: (symbol: string) => void): void {
+    this.onSelect = fn;
+  }
 
   constructor() {
     super({
@@ -117,6 +122,15 @@ export class RHWatchlistPanel extends Panel {
       </div>
     `;
     this.setContent(html);
+
+    // Row click opens the drill-down; the symbol link still goes to the chart.
+    this.content.querySelectorAll<HTMLElement>('.rh-row').forEach(row => {
+      row.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('a')) return;
+        const symbol = row.dataset.symbol;
+        if (symbol) this.onSelect?.(symbol);
+      });
+    });
 
     this.content.querySelectorAll('.rh-sortable').forEach(el => {
       el.addEventListener('click', () => {

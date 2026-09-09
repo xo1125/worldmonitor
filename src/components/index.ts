@@ -32,3 +32,4 @@ export * from './RHRevenuePanel';
 export * from './RHMoversPanel';
 export * from './RHOnchainPanel';
 export * from './RHSocialPanel';
+export * from './RHDetailModal';

@@ -13326,9 +13326,17 @@ body.has-critical-banner .panels-grid {
   }
 }
 
+/* height:100% made each section claim the full panel, pushing later sections
+   out of view — the On-Chain panel's burn table was invisible below the fold. */
 .rh-table-wrap {
-  overflow: auto;
-  height: 100%;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* Single-table panels still fill and scroll vertically. */
+.rh-table-wrap:only-child {
+  overflow-y: auto;
+  max-height: 100%;
 }
 
 .rh-table {
@@ -13540,3 +13548,194 @@ body.has-critical-banner .panels-grid {
   padding: 1px 4px;
   border-radius: 2px;
 }
+
+/* ── RH detail modal ─────────────────────────────────────────────────── */
+
+.rh-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.rh-modal-overlay.visible {
+  display: flex;
+}
+
+.rh-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  width: min(720px, 100%);
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.rh-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.rh-modal-title {
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.rh-modal-sub {
+  color: var(--text-dim);
+  font-size: 10px;
+  margin-left: 8px;
+}
+
+.rh-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.rh-modal-close:hover { color: var(--text); }
+
+.rh-modal-content {
+  overflow-y: auto;
+  padding: 4px 0 14px;
+}
+
+.rh-modal-loading {
+  padding: 30px;
+  text-align: center;
+  color: var(--text-dim);
+}
+
+.rh-modal-section {
+  padding: 12px 14px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.rh-modal-section-title {
+  color: var(--text-dim);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  margin-bottom: 8px;
+}
+
+.rh-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.rh-stat-label {
+  color: var(--text-dim);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rh-stat-value {
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+.rh-stat-sub {
+  color: var(--text-dim);
+  font-size: 9px;
+}
+
+.rh-modal-table { margin-top: 4px; }
+
+.rh-modal-note {
+  color: var(--text-dim);
+  font-size: 10px;
+  line-height: 1.6;
+  padding: 6px 0 2px;
+}
+
+/* Daily fees with revenue nested inside each bar — the gap is what the
+   protocol charges but does not keep. */
+.rh-chart { margin-top: 10px; }
+
+.rh-chart-head {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-dim);
+  font-size: 9px;
+  margin-bottom: 4px;
+}
+
+.rh-chart-legend i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin: 0 4px 0 10px;
+  vertical-align: -1px;
+}
+
+.rh-swatch-fee { background: rgba(68, 255, 136, 0.28); }
+.rh-swatch-rev { background: var(--green); }
+
+.rh-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 90px;
+  border-bottom: 1px solid var(--border);
+}
+
+.rh-bar-col {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.rh-bar-fee {
+  width: 100%;
+  background: rgba(68, 255, 136, 0.28);
+  display: flex;
+  align-items: flex-end;
+  min-height: 1px;
+}
+
+.rh-bar-rev {
+  width: 100%;
+  background: var(--green);
+}
+
+.rh-chart-axis {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-dim);
+  font-size: 9px;
+  margin-top: 3px;
+}
+
+.rh-modal-links {
+  display: flex;
+  gap: 14px;
+  padding: 12px 14px 0;
+}
+
+.rh-modal-links a {
+  color: var(--text-dim);
+  font-size: 10px;
+  text-decoration: none;
+}
+
+.rh-modal-links a:hover { color: var(--green); }
+
+/* Rows that open the drill-down */
+.rh-row,
+.rh-clickable { cursor: pointer; }

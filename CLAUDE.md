@@ -102,7 +102,9 @@ is visible at a time.
 | `api/robinhood-snapshot.js` | Cron: writes a history row every 30 min |
 | `api/robinhood-x.js` | Apify-backed X follower counts |
 | `src/services/robinhood.ts` | Types + formatters |
+| `api/robinhood-detail.js` | Per-token drill-down: fee/revenue history, valuation multiples, CoinGecko attention |
 | `src/components/RH*Panel.ts` | The six panels |
+| `src/components/RHDetailModal.ts` | The drill-down modal (click any watchlist or revenue row) |
 
 ### Adding a token
 
@@ -133,7 +135,14 @@ reason in the cell tooltip — do not substitute a proxy number silently.
   called server-side. **Holder counts have no free source** — do not add a panel that
   claims to show them without solving this first (indexing `Transfer` logs over RPC
   is the only real option).
-- **X followers** come from Apify; there is no free X API.
+- **X followers** come from Apify; there is no free X API. CoinGecko dropped
+  `twitter_followers`, so it is not a substitute — but its `watchlist_portfolio_users`
+  and sentiment votes are live and free, and the detail modal shows them. Those are
+  fetched one token at a time on open, because the free tier cannot take 22 calls
+  per refresh.
+
+**Annualisation uses 30d × 12.17, never DefiLlama's `annualized1y`.** These protocols
+are weeks old, so a trailing-year figure understates them by an order of magnitude.
 
 ### Environment variables
 

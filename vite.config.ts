@@ -112,6 +112,7 @@ function robinhoodApiPlugin(): Plugin {
     '/api/robinhood-watchlist': './api/robinhood-watchlist.js',
     '/api/robinhood-snapshot': './api/robinhood-snapshot.js',
     '/api/robinhood-x': './api/robinhood-x.js',
+    '/api/robinhood-detail': './api/robinhood-detail.js',
   };
 
   return {

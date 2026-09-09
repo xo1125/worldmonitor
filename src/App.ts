@@ -39,6 +39,7 @@ import {
   RHMoversPanel,
   RHOnchainPanel,
   RHSocialPanel,
+  RHDetailModal,
 } from '@/components';
 import type { SearchResult } from '@/components/SearchModal';
 
@@ -84,6 +85,7 @@ export class App {
   private rhPanels: Record<string, Panel> = {};
   private rhLoaded = false;
   private macroLoaded = false;
+  private rhDetailModal: RHDetailModal | null = null;
 
   constructor(containerId: string) {
     const el = document.getElementById(containerId);
@@ -335,6 +337,8 @@ export class App {
   public destroy(): void {
     for (const panel of Object.values(this.rhPanels)) panel.destroy();
     this.rhPanels = {};
+    this.rhDetailModal?.destroy();
+    this.rhDetailModal = null;
     this.isDestroyed = true;
 
     // Clear time display interval
@@ -538,6 +542,12 @@ export class App {
     for (const panel of Object.values(this.rhPanels)) {
       grid.appendChild(panel.getElement());
     }
+
+    // Drill-down shared by the watchlist and revenue tables.
+    this.rhDetailModal = new RHDetailModal();
+    const openDetail = (symbol: string) => void this.rhDetailModal?.open(symbol);
+    (this.rhPanels['rh-watchlist'] as RHWatchlistPanel).setOnSelect(openDetail);
+    (this.rhPanels['rh-revenue'] as RHRevenuePanel).setOnSelect(openDetail);
   }
 
   private setupTabs(): void {
@@ -666,6 +676,7 @@ export class App {
     (this.rhPanels['rh-chain'] as RHChainPanel)?.renderChain(payload.chain);
     (this.rhPanels['rh-watchlist'] as RHWatchlistPanel)?.renderTokens(payload.tokens);
     (this.rhPanels['rh-movers'] as RHMoversPanel)?.renderMovers(payload.tokens);
+    (this.rhPanels['rh-revenue'] as RHRevenuePanel)?.setTokens(payload.tokens);
     (this.rhPanels['rh-revenue'] as RHRevenuePanel)?.renderProtocols(payload.protocols);
     (this.rhPanels['rh-onchain'] as RHOnchainPanel)?.renderOnchain(payload.tokens);
     (this.rhPanels['rh-social'] as RHSocialPanel)?.renderSocial(payload.tokens);

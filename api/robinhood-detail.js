@@ -10,44 +10,28 @@
  */
 
 import { RH_TOKENS, RH_EXPLORER } from './_lib/rh-tokens.js';
-import { getJSON, fetchDexScreener, fetchOnchain } from './_lib/rh-sources.js';
+import { getJSON, fetchDexScreener, fetchOnchain, fetchProtocols } from './_lib/rh-sources.js';
 
 export const config = { runtime: 'edge' };
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const cache = new Map();
 
-/** CoinGecko's address→id map, fetched once and held for an hour. */
-let coinList = { data: null, ts: 0 };
-async function coingeckoId(address) {
-  if (!coinList.data || Date.now() - coinList.ts > 3600_000) {
-    const list = await getJSON(
-      'https://api.coingecko.com/api/v3/coins/list?include_platform=true',
-      { timeoutMs: 20000 }
-    );
-    if (list) {
-      const map = {};
-      for (const c of list) {
-        const addr = c.platforms?.robinhood;
-        if (addr) map[addr.toLowerCase()] = c.id;
-      }
-      coinList = { data: map, ts: Date.now() };
-    }
-  }
-  return coinList.data?.[address.toLowerCase()] ?? null;
-}
-
+/**
+ * CoinGecko attention figures for one token.
+ *
+ * Uses the contract lookup rather than resolving through /coins/list: that list
+ * is ~10MB with platforms included and does not reliably complete inside the
+ * edge runtime, which is why attention came back null in production.
+ */
 async function fetchAttention(address) {
-  const id = await coingeckoId(address);
-  if (!id) return null;
   const c = await getJSON(
-    `https://api.coingecko.com/api/v3/coins/${id}` +
-      '?localization=false&tickers=false&market_data=false&community_data=true&developer_data=false&sparkline=false',
+    `https://api.coingecko.com/api/v3/coins/robinhood/contract/${address}`,
     { timeoutMs: 15000 }
   );
-  if (!c) return null;
+  if (!c || !c.id) return null;
   return {
-    coingeckoId: id,
+    coingeckoId: c.id,
     // CoinGecko stopped populating twitter_followers, so these are the live
     // attention signals it still serves. Not follower counts — a different thing.
     watchlistUsers: c.watchlist_portfolio_users ?? null,
@@ -93,12 +77,13 @@ export default async function handler(req) {
 
   try {
     const slug = token.llamaSlug;
-    const [dexByAddress, onchainByAddress, feeSummary, revSummary, attention] = await Promise.all([
+    const [dexByAddress, onchainByAddress, feeSummary, revSummary, attention, protocols] = await Promise.all([
       fetchDexScreener([token.address]),
       fetchOnchain([token]),
       slug ? getJSON(`https://api.llama.fi/summary/fees/${slug}?dataType=dailyFees`) : null,
       slug ? getJSON(`https://api.llama.fi/summary/fees/${slug}?dataType=dailyRevenue`) : null,
       fetchAttention(token.address),
+      slug ? fetchProtocols([slug]) : null,
     ]);
 
     const dex = dexByAddress[token.address.toLowerCase()] || null;
@@ -160,6 +145,26 @@ export default async function handler(req) {
         allTimeFees: feeSummary.totalAllTime ?? null,
         series: alignSeries(feeSummary.totalDataChart, revSummary?.totalDataChart, 30),
       } : null,
+
+      // Reserve-backed names have no fees at all — backing per token is the
+      // whole thesis, so the drill-down would be empty without this.
+      treasury: (() => {
+        const p = slug ? protocols?.[slug] : null;
+        if (!p || p.holdings == null) return null;
+        const circulating = onchain?.circulating ?? null;
+        const backing = circulating ? p.holdings / circulating : null;
+        return {
+          holdings: p.holdings,
+          tvl: p.tvl,
+          staking: p.staking,
+          borrowed: p.borrowed,
+          utilisation: p.utilisation,
+          tvlChange7d: p.tvlChange7d,
+          backingPerToken: backing,
+          // Under 1.00x the token trades above what backs it.
+          backingVsPrice: backing && dex?.price ? backing / dex.price : null,
+        };
+      })(),
 
       onchain: onchain ? {
         supply: onchain.supply,

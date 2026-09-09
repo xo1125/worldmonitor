@@ -23,6 +23,11 @@ interface RHDetail {
     capture30d: number | null; revenueMultiple: number | null; feesMultiple: number | null;
     allTimeFees: number | null; series: SeriesPoint[];
   } | null;
+  treasury: {
+    holdings: number | null; tvl: number | null; staking: number | null;
+    borrowed: number | null; utilisation: number | null; tvlChange7d: number | null;
+    backingPerToken: number | null; backingVsPrice: number | null;
+  } | null;
   onchain: { supply: number | null; burned: number | null; burnPct: number | null; circulating: number | null } | null;
   attention: {
     watchlistUsers: number | null; sentimentUp: number | null; rank: number | null;
@@ -177,6 +182,23 @@ export class RHDetailModal {
         <div class="rh-modal-note">No DefiLlama fee adapter for this project, so revenue cannot be measured.</div>
       </div>`;
 
+    const t = d.treasury;
+    const treasury = t ? `
+      <div class="rh-modal-section">
+        <div class="rh-modal-section-title">TREASURY</div>
+        <div class="rh-stats">
+          ${this.stat('Backing / token', fmtPrice(t.backingPerToken),
+            t.backingVsPrice != null ? `${t.backingVsPrice.toFixed(2)}x price` : '',
+            t.backingVsPrice != null && t.backingVsPrice >= 1 ? 'rh-up' : 'rh-down')}
+          ${this.stat('Holdings', fmtUsd(t.holdings),
+            t.tvlChange7d != null ? `${fmtPct(t.tvlChange7d)} 7d` : '', changeClass(t.tvlChange7d))}
+          ${t.borrowed != null
+            ? this.stat('Borrowed', fmtUsd(t.borrowed),
+                t.utilisation != null ? `${(t.utilisation * 100).toFixed(1)}% utilisation` : '')
+            : this.stat('Staked', fmtUsd(t.staking), 'in the protocol')}
+        </div>
+      </div>` : '';
+
     const supply = o ? `
       <div class="rh-modal-section">
         <div class="rh-modal-section-title">SUPPLY</div>
@@ -218,6 +240,7 @@ export class RHDetailModal {
       </div>
       ${valuation}
       ${economics}
+      ${treasury}
       ${supply}
       ${attention}
       ${d.note ? `<div class="rh-modal-section"><div class="rh-modal-note">${escapeHtml(d.note)}</div></div>` : ''}

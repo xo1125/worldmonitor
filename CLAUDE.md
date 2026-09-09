@@ -126,6 +126,20 @@ curl "https://api.dexscreener.com/latest/dex/tokens/<address>" | jq '.pairs[0].c
 `dex:volume`, `social`, or `none`. Anything unavailable renders as `—` with the
 reason in the cell tooltip — do not substitute a proxy number silently.
 
+### Revenue Leaders: what gets shown
+
+Three rules, all learned from wrong output:
+
+1. **Versions roll up to their parent.** Pons V1 and V2 are one business.
+2. **Rows that cannot be true are dropped.** A protocol cannot out-earn the chain
+   it runs on, and a day cannot exceed the month containing it. Robin reported
+   $2.4B of 24h fees against $1,545 over 30 days and ranked first.
+3. **NATIVE vs ALL.** Native means built for this chain — one chain, and not a
+   bridge or sequencer. Uniswap earns real fees here but runs on 47 chains, so it
+   is in ALL, not the default view. The tag column shows the protocol's real
+   ticker (`UNI`, `ARB`); watchlist tokens are highlighted. Never print "no token"
+   for a protocol that has one.
+
 ### Data sources and their limits
 
 - **DexScreener** (no key, 300 req/min) — price, mcap, liquidity, volume, txns.

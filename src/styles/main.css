@@ -13877,3 +13877,37 @@ body.has-critical-banner .panels-grid {
 
 .rh-method a, .rh-modal-note a { color: var(--text-dim); }
 .rh-method a:hover, .rh-modal-note a:hover { color: var(--green); }
+
+/* Revenue panel filter */
+.rh-filter { display: inline-flex; gap: 1px; }
+
+.rh-filter-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+}
+
+.rh-filter-btn:hover { color: var(--text); }
+
+.rh-filter-btn.active {
+  color: var(--bg);
+  background: var(--text-dim);
+  border-color: var(--text-dim);
+}
+
+.rh-tag-watched {
+  color: var(--green);
+  border-color: rgba(68, 255, 136, 0.4);
+}
+
+.rh-chains {
+  color: var(--text-dim);
+  font-size: 9px;
+  margin-left: 5px;
+  opacity: 0.7;
+}

@@ -89,7 +89,13 @@ export interface RHChain {
 export interface RHProtocol {
   slug: string;
   name: string;
+  /** The watchlist symbol, when this protocol is one we track. */
   token: string | null;
+  /** The protocol's real ticker, watchlist or not. Null when it has none. */
+  symbol?: string | null;
+  /** Built for Robinhood Chain, rather than deployed here among many. */
+  native?: boolean;
+  chainCount?: number;
   note?: string;
   category?: string | null;
   tvl?: number | null;
@@ -120,7 +126,12 @@ export interface RHPayload {
 /** `force` bypasses the endpoint's 120s cache — used by the manual refresh. */
 export async function fetchRobinhoodWatchlist(force = false): Promise<RHPayload | null> {
   try {
-    const res = await fetch(`/api/robinhood-watchlist${force ? '?refresh=1' : ''}`);
+    // A manual refresh has to bypass the browser cache too, or the button can
+    // hand back the very response the user is trying to replace.
+    const res = await fetch(
+      `/api/robinhood-watchlist${force ? '?refresh=1' : ''}`,
+      force ? { cache: 'no-store' } : undefined
+    );
     if (!res.ok) {
       console.error(`[RH] watchlist HTTP ${res.status}`);
       return null;

@@ -9,6 +9,9 @@ import { fmtUsd, type RHProtocol, type RHToken } from '@/services/robinhood';
 export class RHRevenuePanel extends Panel {
   private onSelect: ((symbol: string) => void) | null = null;
   private marketCaps: Record<string, number> = {};
+  private protocols: RHProtocol[] = [];
+  /** Chain-native projects by default; infrastructure is a different question. */
+  private nativeOnly = true;
 
   public setOnSelect(fn: (symbol: string) => void): void {
     this.onSelect = fn;
@@ -25,9 +28,10 @@ export class RHRevenuePanel extends Panel {
       id: 'rh-revenue',
       title: 'Revenue Leaders',
       infoTooltip:
-        'DefiLlama fees and revenue for Robinhood Chain apps. "Capture" is revenue as a ' +
-        'share of fees: what the protocol keeps versus what it passes to LPs. Protocols ' +
-        'without a fee adapter show as —.',
+        'DefiLlama fees and revenue earned on Robinhood Chain. "Capture" is revenue as a ' +
+        'share of fees: what the protocol keeps versus what it passes to LPs. Versions are ' +
+        'rolled up, so Pons is V1 and V2 combined. NATIVE shows projects built for this ' +
+        'chain; ALL adds deployments like Uniswap that earn here but run on dozens of chains.',
     });
   }
 
@@ -36,8 +40,12 @@ export class RHRevenuePanel extends Panel {
       this.showError('No protocol data');
       return;
     }
+    this.protocols = protocols;
 
-    const ranked = [...protocols].sort(
+    const visible = this.nativeOnly
+      ? protocols.filter(p => p.native || p.token)
+      : protocols;
+    const ranked = [...visible].sort(
       (a, b) => (b.fees24h ?? -1) - (a.fees24h ?? -1)
     );
 
@@ -54,7 +62,14 @@ export class RHRevenuePanel extends Panel {
             ${p.url
               ? `<a href="${escapeHtml(p.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(p.name)}</a>`
               : escapeHtml(p.name)}
-            ${p.token ? `<span class="rh-tag">${escapeHtml(p.token)}</span>` : '<span class="rh-tag rh-tag-muted">no token</span>'}
+            ${p.token
+              ? `<span class="rh-tag rh-tag-watched" title="On your watchlist">${escapeHtml(p.token)}</span>`
+              : p.symbol
+                ? `<span class="rh-tag rh-tag-muted">${escapeHtml(p.symbol)}</span>`
+                : ''}
+            ${!this.nativeOnly && !p.native && p.chainCount && p.chainCount > 1
+              ? `<span class="rh-chains" title="Deployed on ${p.chainCount} chains">${p.chainCount}ch</span>`
+              : ''}
           </td>
           <td class="rh-num">${fmtUsd(p.fees24h)}</td>
           <td class="rh-num">${fmtUsd(p.revenue24h)}</td>
@@ -63,6 +78,13 @@ export class RHRevenuePanel extends Panel {
         </tr>
       `;
     }).join('');
+
+    this.setHeaderBadge(`
+      <span class="rh-filter">
+        <button class="rh-filter-btn ${this.nativeOnly ? 'active' : ''}" data-native="1">NATIVE</button>
+        <button class="rh-filter-btn ${this.nativeOnly ? '' : 'active'}" data-native="0">ALL</button>
+      </span>
+    `);
 
     this.setContent(`
       <div class="rh-table-wrap">
@@ -80,6 +102,15 @@ export class RHRevenuePanel extends Panel {
         </table>
       </div>
     `);
+
+    this.headerRight.querySelectorAll<HTMLElement>('.rh-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const next = btn.dataset.native === '1';
+        if (next === this.nativeOnly) return;
+        this.nativeOnly = next;
+        this.renderProtocols(this.protocols);
+      });
+    });
 
     this.content.querySelectorAll<HTMLElement>('.rh-clickable').forEach(row => {
       row.addEventListener('click', (e) => {

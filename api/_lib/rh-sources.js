@@ -174,6 +174,15 @@ export async function fetchProtocols(slugs) {
 
   const bySlug = {};
   for (const p of all || []) if (p.slug) bySlug[p.slug] = p;
+  // Tickers for every protocol on the list, not only the watchlist's — the
+  // leaders table shows real symbols and "no token" was simply wrong for UNI.
+  const symbolBySlug = {};
+  for (const p of all || []) {
+    if (!p.slug) continue;
+    if (p.symbol && p.symbol !== '-') symbolBySlug[p.slug] = p.symbol;
+    const parent = p.parentProtocol?.replace(/^parent#/, '');
+    if (parent && p.symbol && p.symbol !== '-' && !symbolBySlug[parent]) symbolBySlug[parent] = p.symbol;
+  }
   const feeBySlug = {};
   for (const p of feeOverview?.protocols || []) if (p.slug) feeBySlug[p.slug] = p;
   const revBySlug = {};
@@ -196,6 +205,13 @@ export async function fetchProtocols(slugs) {
 
   // Chain-wide earners, not just the watchlist's protocols: the point of the
   // panel is who makes money on this chain, and 157 are tracked.
+  //
+  // Plumbing, not projects: a canonical bridge or the chain's own sequencer
+  // earns fees here but is not something you can hold a view on.
+  const INFRA_CATEGORIES = new Set([
+    'Canonical Bridge', 'Bridge', 'Cross Chain Bridge', 'Chain',
+    'Foundation', 'Rollup', 'Infrastructure',
+  ]);
   // Roll versions up to their parent (Pons V1 + V2 are one business, and the
   // chain itself is not an app competing with them).
   const grouped = new Map();
@@ -214,8 +230,12 @@ export async function fetchProtocols(slugs) {
       slug: parentSlug, name, category: p.category ?? null,
       fees24h: 0, fees7d: 0, fees30d: 0, revenue24h: 0, revenue30d: 0,
       versions: 0, tvl: bySlug[parentSlug]?.tvl ?? null,
+      // The real ticker. "-" is DefiLlama's way of saying there isn't one.
+      symbol: symbolBySlug[parentSlug] ?? null,
+      chains: new Set(),
       url: `https://defillama.com/protocol/${parentSlug}`,
     };
+    for (const c of p.chains || []) entry.chains.add(c);
     entry.fees24h += p.total24h ?? 0;
     entry.fees7d += p.total7d ?? 0;
     entry.fees30d += p.total30d ?? 0;
@@ -225,9 +245,38 @@ export async function fetchProtocols(slugs) {
     grouped.set(parentSlug, entry);
   }
 
+  // DefiLlama occasionally serves a broken row: Robin reported $2.4B of fees in
+  // 24h against $1,545 over 30 days, and ranked first. Two bounds catch it —
+  // a protocol cannot out-earn the chain it runs on, and a day cannot exceed
+  // the month containing it.
+  const chainFees24h = feeOverview?.total24h ?? null;
+  const plausible = (e) => {
+    if (chainFees24h && e.fees24h > chainFees24h * 1.05) return false;
+    if (e.fees30d > 0 && e.fees24h > e.fees30d * 1.05) return false;
+    return true;
+  };
+
   const leaders = [...grouped.values()]
+    .filter(e => {
+      if (plausible(e)) return true;
+      console.warn(`[RH] dropping implausible fee row: ${e.name} 24h=${e.fees24h} 30d=${e.fees30d}`);
+      return false;
+    })
+    .map(e => {
+      const chains = [...e.chains];
+      return {
+        ...e,
+        chains,
+        chainCount: chains.length,
+        // Built for this chain, versus infrastructure that happens to be
+        // deployed here. Uniswap runs on 46 chains; Pons runs on one.
+        infra: INFRA_CATEGORIES.has(e.category || ''),
+        native: chains.length === 1 && chains[0] === CHAIN_NAME
+          && !INFRA_CATEGORIES.has(e.category || ''),
+      };
+    })
     .sort((a, b) => b.fees24h - a.fees24h)
-    .slice(0, 30);
+    .slice(0, 40);
 
   const out = {};
   for (const slug of slugs) {

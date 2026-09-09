@@ -83,7 +83,7 @@ export default async function handler(req) {
       slug ? getJSON(`https://api.llama.fi/summary/fees/${slug}?dataType=dailyFees`) : null,
       slug ? getJSON(`https://api.llama.fi/summary/fees/${slug}?dataType=dailyRevenue`) : null,
       fetchAttention(token.address),
-      slug ? fetchProtocols([slug]) : null,
+      slug ? fetchProtocols([slug]).then(r => r.bySlug) : null,
     ]);
 
     const dex = dexByAddress[token.address.toLowerCase()] || null;

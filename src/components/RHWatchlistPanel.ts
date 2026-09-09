@@ -18,6 +18,7 @@ export class RHWatchlistPanel extends Panel {
   private sortDir: SortDir = 'desc';
   private tokens: RHToken[] = [];
   private onSelect: ((symbol: string) => void) | null = null;
+  private hasHistory = false;
 
   public setOnSelect(fn: (symbol: string) => void): void {
     this.onSelect = fn;
@@ -76,7 +77,7 @@ export class RHWatchlistPanel extends Panel {
           <span class="rh-metric-label">${escapeHtml(token.primary.label ?? '')}</span>
           <span class="rh-metric-value ${token.primary.value == null ? 'rh-na' : ''}">${escapeHtml(metricValue)}</span>
         </td>
-        <td class="rh-spark-cell">${spark}</td>
+        ${this.hasHistory ? `<td class="rh-spark-cell">${spark}</td>` : ''}
       </tr>
     `;
   }
@@ -84,7 +85,7 @@ export class RHWatchlistPanel extends Panel {
   private renderSection(label: string, tokens: RHToken[]): string {
     if (tokens.length === 0) return '';
     return `
-      <tr class="rh-section"><td colspan="9">${escapeHtml(label)} · ${tokens.length}</td></tr>
+      <tr class="rh-section"><td colspan="${this.hasHistory ? 9 : 8}">${escapeHtml(label)} · ${tokens.length}</td></tr>
       ${this.sorted(tokens).map(t => this.renderRow(t)).join('')}
     `;
   }
@@ -96,6 +97,7 @@ export class RHWatchlistPanel extends Panel {
     }
     this.tokens = tokens;
     this.setCount(tokens.length);
+    this.hasHistory = tokens.some(t => t.spark && t.spark.length >= 3);
 
     const head = (key: SortKey, label: string, cls = 'rh-num') =>
       `<th class="${cls} rh-sortable" data-sort="${key}">${label}${this.indicator(key)}</th>`;
@@ -113,7 +115,7 @@ export class RHWatchlistPanel extends Panel {
               ${head('volume24h', 'Vol 24h')}
               ${head('turnover', 'Turn')}
               <th class="rh-th-left">Primary metric</th>
-              <th class="rh-th-left">48h</th>
+              ${this.hasHistory ? '<th class="rh-th-left">48h</th>' : ''}
             </tr>
           </thead>
           <tbody>

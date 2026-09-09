@@ -194,6 +194,41 @@ export async function fetchProtocols(slugs) {
     if (r) revBySlug[slug] = r;
   }
 
+  // Chain-wide earners, not just the watchlist's protocols: the point of the
+  // panel is who makes money on this chain, and 157 are tracked.
+  // Roll versions up to their parent (Pons V1 + V2 are one business, and the
+  // chain itself is not an app competing with them).
+  const grouped = new Map();
+  for (const p of feeOverview?.protocols || []) {
+    if (p.protocolType === 'chain') continue;
+    if ((p.total24h ?? 0) <= 0) continue;
+
+    const parentSlug = p.parentProtocol ? p.parentProtocol.replace(/^parent#/, '') : p.slug;
+    const isChild = Boolean(p.parentProtocol);
+    const name = isChild
+      ? (p.displayName || p.name || parentSlug).replace(/\s+V\d+$/i, '')
+      : (p.displayName || p.name || p.slug);
+
+    const rev = revBySlug[p.slug];
+    const entry = grouped.get(parentSlug) || {
+      slug: parentSlug, name, category: p.category ?? null,
+      fees24h: 0, fees7d: 0, fees30d: 0, revenue24h: 0, revenue30d: 0,
+      versions: 0, tvl: bySlug[parentSlug]?.tvl ?? null,
+      url: `https://defillama.com/protocol/${parentSlug}`,
+    };
+    entry.fees24h += p.total24h ?? 0;
+    entry.fees7d += p.total7d ?? 0;
+    entry.fees30d += p.total30d ?? 0;
+    entry.revenue24h += rev?.total24h ?? 0;
+    entry.revenue30d += rev?.total30d ?? 0;
+    entry.versions += 1;
+    grouped.set(parentSlug, entry);
+  }
+
+  const leaders = [...grouped.values()]
+    .sort((a, b) => b.fees24h - a.fees24h)
+    .slice(0, 30);
+
   const out = {};
   for (const slug of slugs) {
     const base = bySlug[slug];
@@ -231,7 +266,7 @@ export async function fetchProtocols(slugs) {
       url: `https://defillama.com/protocol/${slug}`,
     };
   }
-  return out;
+  return { bySlug: out, leaders };
 }
 
 // ── Public RPC ─────────────────────────────────────────────────────────────

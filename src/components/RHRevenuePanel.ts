@@ -1,6 +1,6 @@
 import { Panel } from './Panel';
 import { escapeHtml } from '@/utils/sanitize';
-import { fmtUsd, fmtPct, changeClass, type RHProtocol, type RHToken } from '@/services/robinhood';
+import { fmtUsd, type RHProtocol, type RHToken } from '@/services/robinhood';
 
 /**
  * Which apps on the chain actually earn, and how much of what they charge they keep.
@@ -44,7 +44,6 @@ export class RHRevenuePanel extends Panel {
     const rows = ranked.map(p => {
       const capture =
         p.fees24h && p.revenue24h != null && p.fees24h > 0 ? (p.revenue24h / p.fees24h) * 100 : null;
-      const holdings = p.holdings ?? p.tvl ?? null;
       // 30d is the only honest annualisation basis: these protocols are weeks old.
       const annualRevenue = p.revenue30d != null ? p.revenue30d * 12.17 : null;
       const mcap = p.token ? this.marketCaps[p.token] : undefined;
@@ -57,12 +56,9 @@ export class RHRevenuePanel extends Panel {
               : escapeHtml(p.name)}
             ${p.token ? `<span class="rh-tag">${escapeHtml(p.token)}</span>` : '<span class="rh-tag rh-tag-muted">no token</span>'}
           </td>
-          <td class="rh-num">${fmtUsd(holdings)}</td>
-          <td class="rh-num ${changeClass(p.tvlChange7d)}">${fmtPct(p.tvlChange7d)}</td>
           <td class="rh-num">${fmtUsd(p.fees24h)}</td>
           <td class="rh-num">${fmtUsd(p.revenue24h)}</td>
           <td class="rh-num ${capture != null && capture >= 50 ? 'rh-up' : ''}">${capture != null ? `${capture.toFixed(0)}%` : '—'}</td>
-          <td class="rh-num">${fmtUsd(annualRevenue)}</td>
           <td class="rh-num ${multiple != null && multiple < 10 ? 'rh-up' : ''}">${multiple != null ? `${multiple.toFixed(1)}x` : '—'}</td>
         </tr>
       `;
@@ -74,12 +70,9 @@ export class RHRevenuePanel extends Panel {
           <thead>
             <tr>
               <th class="rh-th-left">Protocol</th>
-              <th class="rh-num">TVL</th>
-              <th class="rh-num">7d</th>
               <th class="rh-num">Fees 24h</th>
               <th class="rh-num">Rev 24h</th>
-              <th class="rh-num">Capture</th>
-              <th class="rh-num">Ann. rev</th>
+              <th class="rh-num" title="Revenue as a share of fees — what the protocol keeps">Capture</th>
               <th class="rh-num" title="Market cap divided by annualised revenue">Mcap/rev</th>
             </tr>
           </thead>

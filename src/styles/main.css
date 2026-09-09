@@ -13303,26 +13303,91 @@ body.has-critical-banner .panels-grid {
   display: none !important;
 }
 
-/* Wider default cells: the watchlist table carries more columns than the
-   macro panels, and the metric column needs room for a label plus a value. */
+/* Three panels, not twenty: the auto-fill grid the macro tab uses leaves this
+   tab mostly empty. Chain vitals are a strip across the top, the watchlist takes
+   the main column, revenue sits beside it, and both fill the viewport height. */
 .rh-grid {
-  grid-auto-rows: minmax(200px, 420px);
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.85fr) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 4px;
+  padding: 4px;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
 }
 
-.rh-grid [data-panel='rh-watchlist'] {
-  grid-column: span 2;
-  grid-row: span 2;
+.rh-grid [data-panel='rh-chain'] {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  min-height: 0;
 }
 
-/* Six numeric columns don't fit a single grid cell without clipping. */
-.rh-grid [data-panel='rh-revenue'] {
-  grid-column: span 2;
+.rh-grid [data-panel='rh-watchlist'] { grid-column: 1; grid-row: 2; }
+.rh-grid [data-panel='rh-revenue'] { grid-column: 2; grid-row: 2; }
+
+/* Panels are placed explicitly here, so drag-resize spans must not apply. */
+.rh-grid .panel {
+  height: 100%;
+  min-height: 0 !important;
 }
 
-@media (max-width: 900px) {
+/* The macro tab's responsive rules force .panels-grid to flex at narrow widths,
+   which would collapse this layout. */
+@media (max-width: 1200px) {
+  .rh-grid { display: grid !important; }
+}
+
+.rh-grid .panel.span-1,
+.rh-grid .panel.span-2,
+.rh-grid .panel.span-3,
+.rh-grid .panel.span-4 {
+  grid-column: auto;
+  grid-row: auto;
+}
+
+.rh-grid [data-panel='rh-chain'].span-1,
+.rh-grid [data-panel='rh-chain'].span-2,
+.rh-grid [data-panel='rh-chain'].span-3,
+.rh-grid [data-panel='rh-chain'].span-4 { grid-column: 1 / -1; grid-row: 1; }
+
+.rh-grid [data-panel='rh-watchlist'].span-1,
+.rh-grid [data-panel='rh-watchlist'].span-2,
+.rh-grid [data-panel='rh-watchlist'].span-3,
+.rh-grid [data-panel='rh-watchlist'].span-4 { grid-column: 1; grid-row: 2; }
+
+.rh-grid [data-panel='rh-revenue'].span-1,
+.rh-grid [data-panel='rh-revenue'].span-2,
+.rh-grid [data-panel='rh-revenue'].span-3,
+.rh-grid [data-panel='rh-revenue'].span-4 { grid-column: 2; grid-row: 2; }
+
+/* Chain vitals read as one horizontal strip rather than a half-empty card. */
+.rh-grid [data-panel='rh-chain'] .panel-content { padding: 0; }
+
+.rh-grid [data-panel='rh-chain'] .rh-tiles {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+}
+
+@media (max-width: 1100px) {
+  .rh-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(320px, 1fr) minmax(280px, 0.7fr);
+  }
+
   .rh-grid [data-panel='rh-watchlist'],
-  .rh-grid [data-panel='rh-revenue'] {
-    grid-column: span 1;
+  .rh-grid [data-panel='rh-watchlist'].span-1,
+  .rh-grid [data-panel='rh-watchlist'].span-2,
+  .rh-grid [data-panel='rh-watchlist'].span-3,
+  .rh-grid [data-panel='rh-watchlist'].span-4 { grid-column: 1; grid-row: 2; }
+
+  .rh-grid [data-panel='rh-revenue'],
+  .rh-grid [data-panel='rh-revenue'].span-1,
+  .rh-grid [data-panel='rh-revenue'].span-2,
+  .rh-grid [data-panel='rh-revenue'].span-3,
+  .rh-grid [data-panel='rh-revenue'].span-4 { grid-column: 1; grid-row: 3; }
+
+  .rh-grid [data-panel='rh-chain'] .rh-tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -13486,6 +13551,9 @@ body.has-critical-banner .panels-grid {
   background: var(--surface);
   padding: 8px 10px;
 }
+
+.rh-grid [data-panel='rh-chain'] { min-height: 0; }
+.rh-grid [data-panel='rh-chain'] .panel { min-height: 0; }
 
 .rh-tile-label {
   color: var(--text-dim);

@@ -109,7 +109,7 @@ export async function buildPayload() {
     ]),
   ];
 
-  const [dexByAddress, chain, protocols, onchainByAddress, social, series] = await Promise.all([
+  const [dexByAddress, chain, protocolResult, onchainByAddress, social, series] = await Promise.all([
     fetchDexScreener(addresses),
     fetchChainVitals(),
     fetchProtocols(slugs),
@@ -117,6 +117,9 @@ export async function buildPayload() {
     readJSON(KEYS.social, {}),
     readHistory(),
   ]);
+
+  const protocols = protocolResult?.bySlug || {};
+  const leaders = protocolResult?.leaders || [];
 
   const history = deriveHistory(series, RH_TOKENS.map(t => t.symbol));
   const chainHistory = deriveChainHistory(series);
@@ -190,7 +193,18 @@ export async function buildPayload() {
     updatedAt: new Date().toISOString(),
     chain: { ...chain, ...chainHistory },
     tokens,
-    protocols: RH_PROTOCOLS.map(p => ({ ...p, ...(protocols[p.slug] || {}) })).filter(p => p.name),
+    // Watchlist protocols first (they carry the token tag), then everything else
+    // the chain earns on, so the ranking is the chain's and not just ours.
+    protocols: (() => {
+      const tagged = Object.fromEntries(RH_PROTOCOLS.map(p => [p.slug, p]));
+      const merged = leaders.map(l => ({ ...l, token: tagged[l.slug]?.token ?? null }));
+      const seen = new Set(merged.map(p => p.slug));
+      const missing = RH_PROTOCOLS
+        .filter(p => !seen.has(p.slug))
+        .map(p => ({ ...p, ...(protocols[p.slug] || {}) }))
+        .filter(p => p.name);
+      return [...merged, ...missing];
+    })(),
     coverage: {
       priced: tokens.filter(t => t.price != null).length,
       total: tokens.length,

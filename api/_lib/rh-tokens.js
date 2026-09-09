@@ -35,8 +35,9 @@ export const RH_TOKENS = [
     conviction: 'high',
     primaryMetric: 'Vault backing / token', metricSource: 'onchain:treasury',
     secondaryMetric: 'LP depth', secondarySource: 'dex:liquidity',
-    // Fill these in to light up backing-per-token: the vault contract and the asset it holds.
-    treasury: null, reserveToken: null, reserveSymbol: 'NVDA',
+    treasury: '0xd14D2eEb9648f53fA153A218eeEd908789C28630',
+    reserveToken: '0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC',
+    reserveSymbol: 'NVDA',
     note: 'Backing is a fraction of mcap — the NVDA pairing is a liquidity structure, not collateral.',
   },
   {
@@ -192,6 +193,25 @@ export const RH_TOKENS = [
     secondaryMetric: '24h volume', secondarySource: 'dex:volume',
   },
 ];
+
+/**
+ * Pons protocol contracts, supplied by the desk. The primary RPC serves
+ * eth_getLogs (publicnode rejects it as an archive request), so launch and
+ * graduation counts are readable from these. At ~0.1s blocks, a day is roughly
+ * 870,000 blocks — far past a single getLogs call — so counts have to be
+ * sampled over a window or accumulated by the snapshot cron.
+ */
+export const PONS_CONTRACTS = {
+  factory: '0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e',
+  memeHook: '0xE5e702641Ea86F4ae6cC3cDaeD2B886f976Be044',
+  feeEscrow: '0xd3AFEB2a57f70eF218Aa82451c51B2fb0416Ac9e',
+  buybackVault: '0x42df2a798f82289E177311362e8f5ccC45c1219c',
+  launchLocker: '0x267444D099b10fB5Ed7c3Cc7B7c767AdcA574952',
+  launchAndBuy: '0xe33E9E479dF8802cb0866d5d05258bEc4cF62948',
+  launchDeployer: '0x3711ceA4feaDE896C913C68F01Eda97Cb06D1A42',
+  graduationExecutor: '0xC7819B64A1dAECD7eC19856d026cb14EfBd89046',
+  graduationGuard: '0xf5695117b99B6f6401e67d4195BD653628176C6C',
+};
 
 /** Pre-token protocols on the chain worth watching (no ticker to price). */
 export const RH_PROTOCOLS = [

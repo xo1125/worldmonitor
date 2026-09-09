@@ -67,11 +67,20 @@ function resolveMetric(source, ctx) {
   }
 
   if (source === 'onchain:treasury') {
+    const { reservePrice } = ctx;
+    if (onchain?.reserveBalance != null && reservePrice && onchain.circulating) {
+      const backingUsd = onchain.reserveBalance * reservePrice;
+      return {
+        kind: 'usdPerToken', value: backingUsd / onchain.circulating,
+        sub: backingUsd, subLabel: `${onchain.reserveSymbol || 'reserve'} vault`,
+        source: 'rpc',
+      };
+    }
     if (onchain?.backingPerToken != null) {
+      // Balance without a price: still report it, in reserve-asset units.
       return { kind: 'usdPerToken', value: onchain.backingPerToken, sub: onchain.reserveBalance,
                subLabel: `${onchain.reserveSymbol || 'reserve'} held`, source: 'rpc' };
     }
-    // Treasury address not configured yet — say so rather than printing a wrong number.
     return { kind: null, value: null, source: 'rpc', note: 'treasury address not set' };
   }
 
@@ -102,6 +111,10 @@ function resolveMetric(source, ctx) {
 
 export async function buildPayload() {
   const addresses = RH_TOKENS.map(t => t.address);
+  // Reserve assets are priced too: 1,290 NVDA means nothing until it is dollars.
+  const reserveAddresses = [...new Set(
+    RH_TOKENS.map(t => t.reserveToken).filter(Boolean).map(a => a.toLowerCase())
+  )].filter(a => !addresses.some(x => x.toLowerCase() === a));
   const slugs = [
     ...new Set([
       ...RH_TOKENS.map(t => t.llamaSlug).filter(Boolean),
@@ -110,7 +123,7 @@ export async function buildPayload() {
   ];
 
   const [dexByAddress, chain, protocolResult, onchainByAddress, social, series] = await Promise.all([
-    fetchDexScreener(addresses),
+    fetchDexScreener([...addresses, ...reserveAddresses]),
     fetchChainVitals(),
     fetchProtocols(slugs),
     fetchOnchain(RH_TOKENS),
@@ -128,8 +141,11 @@ export async function buildPayload() {
     const key = t.address.toLowerCase();
     const dex = dexByAddress[key] || null;
     const onchain = onchainByAddress[key] || null;
+    const reservePrice = t.reserveToken
+      ? dexByAddress[t.reserveToken.toLowerCase()]?.price ?? null
+      : null;
     const socialEntry = t.handle ? (social?.[t.handle.toLowerCase()] || null) : null;
-    const ctx = { token: t, dex, chain, protocols, onchain, social: socialEntry };
+    const ctx = { token: t, dex, chain, protocols, onchain, social: socialEntry, reservePrice };
     const hist = history[t.symbol] || {};
 
     const buys = dex?.buys24h ?? 0;
@@ -170,9 +186,11 @@ export async function buildPayload() {
       reserveBalance: onchain?.reserveBalance ?? null,
       reserveSymbol: onchain?.reserveSymbol ?? null,
       // Backing as a share of market cap — the honest read on "asset-backed" claims.
+      reservePrice,
+      // Backing as a share of market cap — the honest read on "asset-backed".
       backingRatio:
-        onchain?.reserveBalance != null && dex?.marketCap
-          ? onchain.reserveBalance / dex.marketCap
+        onchain?.reserveBalance != null && reservePrice && dex?.marketCap
+          ? (onchain.reserveBalance * reservePrice) / dex.marketCap
           : null,
 
       followers: socialEntry?.followers ?? null,

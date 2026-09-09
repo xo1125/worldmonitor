@@ -9,6 +9,10 @@ export default async function handler(req) {
     ACLED_ACCESS_TOKEN: process.env.ACLED_ACCESS_TOKEN ? '✓ SET' : '✗ MISSING',
     CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN ? '✓ SET' : '✗ MISSING',
     WINGBITS_API_KEY: process.env.WINGBITS_API_KEY ? '✓ SET' : '✗ MISSING',
+    UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL ? '✓ SET' : '✗ MISSING',
+    UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN ? '✓ SET' : '✗ MISSING',
+    CRON_SECRET: process.env.CRON_SECRET ? '✓ SET' : '✗ MISSING',
+    APIFY_TOKEN: process.env.APIFY_TOKEN ? '✓ SET' : '✗ MISSING',
     NODE_ENV: process.env.NODE_ENV || 'not set',
     VERCEL_ENV: process.env.VERCEL_ENV || 'not set',
   };

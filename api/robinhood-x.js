@@ -73,7 +73,8 @@ async function runApifyBatch(handles, token) {
   const memoryMb = process.env.APIFY_X_MEMORY_MB;
   const url =
     `https://api.apify.com/v2/acts/${actor}/run-sync-get-dataset-items` +
-    `?token=${encodeURIComponent(token)}&timeout=50&format=json` +
+    // Well inside the 60s function budget, with room for the Redis write.
+    `?token=${encodeURIComponent(token)}&timeout=40&format=json` +
     (memoryMb ? `&memory=${encodeURIComponent(memoryMb)}` : '');
 
   const res = await fetch(url, {
@@ -111,9 +112,10 @@ async function runApify(handles) {
     batches.push(handles.slice(i, i + HANDLES_PER_RUN));
   }
 
-  // Two at a time: fully parallel runs trip the account's concurrent-run limit,
-  // while fully sequential runs would exceed the 60s function cap.
-  const CONCURRENCY = 2;
+  // One wave. Two waves of up to 50s each overran Vercel's 60s function limit
+  // and returned 504; the account allows enough concurrent actor runs to do
+  // every batch at once, so the wall clock is one run, not a chain of them.
+  const CONCURRENCY = 8;
   const results = [];
   const failures = [];
   for (let i = 0; i < batches.length; i += CONCURRENCY) {
